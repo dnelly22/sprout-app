@@ -1,0 +1,49 @@
+/* Sprout — Typography tokens
+   Three families with clear jobs:
+   - Baloo 2     display & brand. Rounded, warm, confident. Headings, numbers, kid UI.
+   - Nunito Sans UI & body. The workhorse — labels, paragraphs, buttons, nav.
+   - Newsreader  editorial. The "short read" lesson body, book excerpts, quotes. */
+:root {
+  --font-display: 'Baloo 2', ui-rounded, 'Segoe UI', system-ui, sans-serif;
+  --font-body:    'Nunito Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-read:    'Newsreader', Georgia, 'Times New Roman', serif;
+
+  /* Weights */
+  --w-regular: 400; /* @kind other */
+  --w-medium:  500; /* @kind other */
+  --w-semibold: 600; /* @kind other */
+  --w-bold:    700; /* @kind other */
+  --w-extrabold: 800; /* @kind other */
+
+  /* Type scale (rem, 16px base) — rounded, generous for touch + warmth */
+  --text-2xs: 0.6875rem; /* 11 — micro labels, kid star counts */
+  --text-xs:  0.75rem;   /* 12 — captions, meta */
+  --text-sm:  0.875rem;  /* 14 — secondary body, list meta */
+  --text-md:  1rem;      /* 16 — base body */
+  --text-lg:  1.125rem;  /* 18 — lead body, list titles */
+  --text-xl:  1.375rem;  /* 22 — card / section titles */
+  --text-2xl: 1.75rem;   /* 28 — screen titles */
+  --text-3xl: 2.25rem;   /* 36 — display */
+  --text-4xl: 3rem;      /* 48 — hero / kid level */
+
+  /* Line heights */
+  --leading-tight:  1.12;
+  --leading-snug:   1.28;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.7; /* Newsreader reads */
+
+  /* Letter spacing */
+  --tracking-tight:  -0.02em;
+  --tracking-normal: 0;
+  --tracking-wide:   0.04em;
+  --tracking-caps:   0.08em; /* eyebrow / overline labels */
+
+  /* ---- Semantic role tokens ---- */
+  --display-font: var(--font-display);
+  --display-weight: var(--w-extrabold);
+  --heading-font: var(--font-display);
+  --heading-weight: var(--w-bold);
+  --body-font: var(--font-body);
+  --label-weight: var(--w-bold);     /* buttons, nav, chips */
+  --read-font: var(--font-read);
+}

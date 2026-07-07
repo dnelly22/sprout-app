@@ -1,0 +1,148 @@
+/* Sprout — Color tokens
+   A warm, cream-grounded palette with a trustworthy "sprout green" core for the
+   parent app, and five bright, playful accents that come alive in Kid Zone and
+   on the five communication areas. Warm neutrals (never cold gray) keep the whole
+   system feeling human and unclinical. */
+:root {
+  /* ---- Primary: Sprout green (growth, trust, calm) ---- */
+  --green-50:  #ECF7F0;
+  --green-100: #D2EEDC;
+  --green-200: #A8DCBC;
+  --green-300: #74C496;
+  --green-400: #44A971;
+  --green-500: #1F8A5B;
+  --green-600: #15724A;
+  --green-700: #105538;
+  --green-800: #0C3F2A;
+
+  /* ---- Coral (warmth, wins, hearts, secondary CTA) ---- */
+  --coral-100: #FFE7DE;
+  --coral-300: #FFC2AE;
+  --coral-400: #FF9576;
+  --coral-500: #F2724C;
+  --coral-600: #D9572F;
+
+  /* ---- Sky (the Coach / AI voice) ---- */
+  --sky-100: #E3F1FB;
+  --sky-300: #BFE0F5;
+  --sky-400: #6FB8E8;
+  --sky-500: #2A8FD8;
+  --sky-600: #1E73B4;
+
+  /* ---- Sun (kid stars, streaks, rewards) ---- */
+  --sun-100: #FFF3D6;
+  --sun-300: #FFE2A1;
+  --sun-400: #FFCF5C;
+  --sun-500: #FBB614;
+  --sun-600: #E09A00;
+
+  /* ---- Grape (kid level, journey map, play) ---- */
+  --grape-100: #EEE7FB;
+  --grape-300: #D6C8F5;
+  --grape-400: #A98BE8;
+  --grape-500: #7A5AD9;
+  --grape-600: #6242BC;
+
+  /* ---- Berry (big feelings, love, alert-soft) ---- */
+  --berry-100: #FCE4EC;
+  --berry-300: #F8C2D4;
+  --berry-400: #EF8AAB;
+  --berry-500: #E0517A;
+  --berry-600: #C23A60;
+
+  /* ---- Warm neutrals ---- */
+  --cream-50:  #FFFDF7;
+  --cream-100: #FBF6EC;
+  --cream-200: #F4EDDF;
+  --sand-300:  #E8DECC;
+  --ink-900: #2A2521;
+  --ink-700: #4A433C;
+  --ink-500: #756C61;
+  --ink-400: #9A9085;
+  --ink-300: #C4BBAE;
+  --line-200: #ECE4D6;
+  --line-300: #E0D6C4;
+
+  /* ===================================================================
+     Semantic aliases — prefer these in components
+     =================================================================== */
+
+  /* Surfaces */
+  --bg:            var(--cream-100);
+  --surface:       #FFFFFF;
+  --surface-sunk:  var(--cream-50);
+  --surface-card:  #FFFFFF;
+  --surface-tint:  var(--green-50);
+
+  /* Text */
+  --text-strong:   var(--ink-900);
+  --text-body:     var(--ink-700);
+  --text-muted:    var(--ink-500);
+  --text-faint:    var(--ink-400);
+  --text-on-primary: #FFFFFF;
+  --text-on-dark:    var(--cream-50);
+
+  /* Brand / interactive */
+  --primary:        var(--green-500);
+  --primary-hover:  var(--green-600);
+  --primary-press:  var(--green-700);
+  --primary-soft:   var(--green-100);
+  --on-primary:     #FFFFFF;
+  --accent:         var(--coral-500);
+  --accent-hover:   var(--coral-600);
+  --accent-soft:    var(--coral-100);
+  --focus-ring:     var(--green-400);
+
+  /* Borders */
+  --border:         var(--line-200);
+  --border-strong:  var(--line-300);
+  --border-primary: var(--green-300);
+
+  /* Coach / AI */
+  --coach:          var(--sky-500);
+  --coach-soft:     var(--sky-100);
+
+  /* Status */
+  --success:        var(--green-500);
+  --success-soft:   var(--green-100);
+  --warning:        var(--sun-600);
+  --warning-soft:   var(--sun-100);
+  --danger:         var(--berry-500);
+  --danger-soft:    var(--berry-100);
+  --info:           var(--sky-500);
+  --info-soft:      var(--sky-100);
+
+  /* ---- Communication areas (the five book skills) ---- */
+  --area-speakup:   var(--coral-500); /* Speaking up */
+  --area-listen:    var(--sky-500);   /* Staying calm */
+  --area-feelings:  var(--berry-500); /* Setting boundaries */
+  --area-conflict:  var(--grape-500); /* Reading the room */
+  --area-connect:   var(--green-500); /* Connecting */
+
+  /* ---- Book parts / lesson situations ---- */
+  --part-home:      var(--coral-500); /* Family & Home */
+  --part-school:    var(--sky-500);   /* School & Teams */
+  --part-friends:   var(--sun-600);   /* Friends & Social */
+  --part-feelings:  var(--grape-500); /* Big Feelings */
+
+  /* ===================================================================
+     Kid Zone — brighter, higher-energy scope.
+     Apply on a .kidzone wrapper to retune the semantic surface/brand.
+     =================================================================== */
+  --kid-bg:        #F3ECFF;
+  --kid-primary:   var(--grape-500);
+  --kid-primary-hover: var(--grape-600);
+  --kid-star:      var(--sun-500);
+  --kid-surface:   #FFFFFF;
+}
+
+.kidzone {
+  --bg:            var(--kid-bg);
+  --primary:       var(--grape-500);
+  --primary-hover: var(--grape-600);
+  --primary-press: #533399;
+  --primary-soft:  var(--grape-100);
+  --focus-ring:    var(--grape-400);
+  --accent:        var(--sun-500);
+  --accent-hover:  var(--sun-600);
+}

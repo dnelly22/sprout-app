@@ -1,0 +1,28 @@
+/* Sprout — Spacing & sizing tokens. 4px base grid. */
+:root {
+  --space-0: 0;
+  --space-1: 0.25rem; /* 4 */
+  --space-2: 0.5rem;  /* 8 */
+  --space-3: 0.75rem; /* 12 */
+  --space-4: 1rem;    /* 16 */
+  --space-5: 1.25rem; /* 20 */
+  --space-6: 1.5rem;  /* 24 */
+  --space-7: 2rem;    /* 32 */
+  --space-8: 2.5rem;  /* 40 */
+  --space-9: 3rem;    /* 48 */
+  --space-10: 4rem;   /* 64 */
+
+  /* Layout */
+  --gutter:        var(--space-5);   /* screen side padding (mobile) */
+  --section-gap:   var(--space-7);   /* between home sections */
+  --card-pad:      var(--space-5);
+  --content-max:   430px;            /* mobile app frame width */
+
+  /* Touch targets — never below 44px */
+  --tap-min: 44px;
+  --control-h-sm: 40px;
+  --control-h:    52px; /* default button / input height */
+  --control-h-lg: 60px; /* primary CTA, kid buttons */
+
+  --nav-h: 76px;        /* bottom tab bar */
+}

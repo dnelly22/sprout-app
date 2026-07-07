@@ -1,0 +1,42 @@
+/* Sprout — Effects: radius, shadow, blur, motion.
+   Soft, rounded, warm-tinted. Shadows are warm (brown-tinted, never gray) and low
+   to keep the cream surfaces feeling like paper, not glass. */
+:root {
+  /* Corner radii — generous & friendly */
+  --radius-xs:  6px;
+  --radius-sm:  10px;
+  --radius-md:  14px;  /* default card / input */
+  --radius-lg:  20px;  /* feature cards, sheets */
+  --radius-xl:  28px;  /* hero cards, kid tiles */
+  --radius-pill: 999px;
+
+  /* Warm-tinted shadows (brown base, low + soft) */
+  --shadow-xs: 0 1px 2px rgba(74, 56, 38, 0.06);
+  --shadow-sm: 0 2px 6px rgba(74, 56, 38, 0.07);
+  --shadow-md: 0 6px 18px rgba(74, 56, 38, 0.09);
+  --shadow-lg: 0 14px 36px rgba(74, 56, 38, 0.12);
+  --shadow-pop: 0 18px 50px rgba(74, 56, 38, 0.18); /* dialogs, kid celebrate */
+
+  /* Colored glow for primary CTAs (subtle) */
+  --shadow-primary: 0 8px 20px rgba(31, 138, 91, 0.26);
+  --shadow-accent:  0 8px 20px rgba(242, 114, 76, 0.26);
+
+  /* Inner highlight for raised "candy" buttons (kid) */
+  --inset-top: inset 0 1px 0 rgba(255, 255, 255, 0.35);
+
+  /* Blur for sheet/scrim backdrops */
+  --blur-sm: 6px;
+  --blur-md: 16px;
+  --scrim: rgba(42, 37, 33, 0.42);
+
+  /* Hairlines */
+  --border-w: 1.5px;
+
+  /* Motion — gentle, slightly springy. No harsh linear moves. */
+  --ease-out:   cubic-bezier(0.22, 0.61, 0.36, 1); /* @kind other */
+  --ease-soft:  cubic-bezier(0.4, 0, 0.2, 1); /* @kind other */
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1); /* @kind other */
+  --dur-fast: 140ms; /* @kind other */
+  --dur-base: 220ms; /* @kind other */
+  --dur-slow: 360ms; /* @kind other */
+}

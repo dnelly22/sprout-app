@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Sprout — Animation Cutout Preview</title>
+<style>
+  :root { color-scheme: light; }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #FBF6EC; color: #2A2521; }
+  header { position: sticky; top: 0; z-index: 10; background: #4E3399; color: #fff; padding: 12px 16px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+  header h1 { font-size: 15px; margin: 0 12px 0 0; font-weight: 800; }
+  .seg { display: flex; gap: 4px; background: rgba(255,255,255,.14); border-radius: 999px; padding: 3px; }
+  .seg button { border: none; background: transparent; color: #fff; font-weight: 700; font-size: 12px; padding: 5px 12px; border-radius: 999px; cursor: pointer; }
+  .seg button.on { background: #fff; color: #4E3399; }
+  #replayAll { border: none; background: #FBB614; color: #5c3d00; font-weight: 800; font-size: 12px; padding: 7px 14px; border-radius: 999px; cursor: pointer; }
+  main { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 14px; padding: 14px; }
+  .cell { border: 2px solid #2A2521; border-radius: 14px; overflow: hidden; background: #fff; box-shadow: 4px 5px 0 rgba(42,37,33,.5); }
+  .stage { position: relative; height: 300px; display: flex; align-items: flex-end; justify-content: center; overflow: hidden; }
+  .stage img.clip { max-height: 96%; max-width: 92%; object-fit: contain; }
+  .bar { display: flex; align-items: center; justify-content: space-between; padding: 8px 10px; border-top: 2px solid #2A2521; background: #fff; }
+  .bar .name { font-weight: 800; font-size: 12.5px; }
+  .bar .size { font-size: 11px; color: #756C61; margin-left: 6px; }
+  .bar button { border: 1.5px solid #7A5AD9; color: #7A5AD9; background: #fff; font-weight: 800; font-size: 11px; padding: 4px 10px; border-radius: 999px; cursor: pointer; }
+  /* backgrounds */
+  .bg-checker .stage { background: repeating-conic-gradient(#d9d4c8 0% 25%, #f2ede1 0% 50%) 0 0 / 22px 22px; }
+  .bg-purple  .stage { background: #7A5AD9; }
+  .bg-white   .stage { background: #ffffff; }
+  .bg-dark    .stage { background: #2A2521; }
+  .bg-scene   .stage { background: url(/assets/journey/scene-bg.jpg) center/cover no-repeat; }
+  .note { padding: 4px 16px 18px; font-size: 12px; color: #756C61; }
+</style>
+</head>
+<body class="bg-checker">
+<header>
+  <h1>🌱 Animation Cutout Preview</h1>
+  <div class="seg" id="bgs">
+    <button data-bg="bg-checker" class="on">Checker</button>
+    <button data-bg="bg-purple">Purple</button>
+    <button data-bg="bg-scene">Scene</button>
+    <button data-bg="bg-white">White</button>
+    <button data-bg="bg-dark">Dark</button>
+  </div>
+  <button id="replayAll">▶ Replay all</button>
+</header>
+<main id="grid"></main>
+<p class="note">Characters play once and freeze on their last frame (as in the game) — hit Replay to run one again. Sprout clips loop. White streaks near hands are the art's comic motion-lines; soft gray ovals under feet are the art's contact shadows.</p>
+<script>
+  const CLIPS = [
+    ['boy-idle',      '/assets/journey/characters/boy-idle.webp'],
+    ['boy-laughing',  '/assets/journey/characters/boy-laughing.webp'],
+    ['boy-thinking',  '/assets/journey/characters/boy-thinking.webp'],
+    ['boy-mean',      '/assets/journey/characters/boy-mean.webp'],
+    ['girl-idle',     '/assets/journey/characters/girl-idle.webp'],
+    ['girl-laughing', '/assets/journey/characters/girl-laughing.webp'],
+    ['girl-thinking', '/assets/journey/characters/girl-thinking.webp'],
+    ['girl-mean',     '/assets/journey/characters/girl-mean.webp'],
+    ['girl-snarky',   '/assets/journey/characters/girl-snarky.webp'],
+    ['sprout-idle (loops)',    '/assets/mascot/sprout-idle.webp'],
+    ['sprout-jump1',           '/assets/mascot/sprout-jump1.webp'],
+    ['sprout-jump2 (old art)', '/assets/mascot/sprout-jump2.webp'],
+    ['sprout-growth (5★)',     '/assets/mascot/sprout-growth.webp'],
+    ['sprout-sad (1★)',        '/assets/mascot/sprout-sad.webp'],
+    ['sprout-thinking',        '/assets/mascot/sprout-thinking.webp'],
+    ['sprout-sunglasses (finish)', '/assets/mascot/sprout-sunglasses.webp'],
+    ['sprout-reading',         '/assets/mascot/sprout-reading.webp'],
+    ['sprout-surprised',       '/assets/mascot/sprout-surprised.webp'],
+    ['sprout-sleeping',        '/assets/mascot/sprout-sleeping.webp'],
+    ['group-waving (onboarding, loops)', '/assets/mascot/group-waving.webp'],
+  ];
+
+  const grid = document.getElementById('grid');
+  for (const [name, src] of CLIPS) {
+    const cell = document.createElement('div');
+    cell.className = 'cell';
+    cell.innerHTML =
+      '<div class="stage"><img class="clip" alt="' + name + '"></div>' +
+      '<div class="bar"><span><span class="name">' + name + '</span><span class="size"></span></span>' +
+      '<button>▶ Replay</button></div>';
+    const img = cell.querySelector('img');
+    const replay = () => { img.src = src + '?r=' + Date.now(); };
+    replay();
+    cell.querySelector('button').addEventListener('click', replay);
+    fetch(src, { method: 'HEAD' }).then(r => {
+      const kb = Math.round((+r.headers.get('content-length') || 0) / 1024);
+      if (kb) cell.querySelector('.size').textContent = kb + ' KB';
+    }).catch(() => {});
+    grid.appendChild(cell);
+  }
+
+  document.getElementById('bgs').addEventListener('click', (e) => {
+    const b = e.target.closest('button'); if (!b) return;
+    document.querySelectorAll('#bgs button').forEach(x => x.classList.toggle('on', x === b));
+    document.body.className = b.dataset.bg;
+  });
+  document.getElementById('replayAll').addEventListener('click', () => {
+    document.querySelectorAll('.cell button').forEach(b => b.click());
+  });
+</script>
+</body>
+</html>

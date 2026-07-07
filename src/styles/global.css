@@ -1,0 +1,149 @@
+/* Sprout — global stylesheet.
+   Token link order matters: fonts → colors → typography → spacing → effects → base. */
+@import './tokens/fonts.css';
+@import './tokens/colors.css';
+@import './tokens/typography.css';
+@import './tokens/spacing.css';
+@import './tokens/effects.css';
+@import './tokens/base.css';
+
+/* ----- App frame: the design's 430px phone frame IS the viewport in the real app ----- */
+html, body, #root { height: 100%; }
+body {
+  margin: 0;
+  background: var(--bg);
+  /* Outside the frame on wide screens, show a warm backdrop. */
+}
+#root {
+  display: flex;
+  justify-content: center;
+  background: radial-gradient(120% 80% at 50% 0%, var(--cream-50), var(--cream-200));
+}
+
+.app-frame {
+  width: 100%;
+  max-width: var(--content-max);
+  min-height: 100dvh;
+  background: var(--bg);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* The scrollable screen area above the bottom nav. */
+.app-scroll {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+}
+.app-scroll::-webkit-scrollbar { display: none; }
+
+button { font-family: inherit; }
+
+/* ----- Animations (gate on reduced-motion) ----- */
+@keyframes questPulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.08); } }
+.quest-pulse { animation: questPulse 1.6s var(--ease-soft, ease-in-out) infinite; }
+
+@keyframes micLive {
+  0%, 100% { box-shadow: 0 0 0 8px rgba(232,93,76,0.12); }
+  50%      { box-shadow: 0 0 0 16px rgba(232,93,76,0.04); }
+}
+.mic-live { animation: micLive 1s ease-in-out infinite; }
+
+@keyframes starPop {
+  0%   { transform: scale(0.4); opacity: 0; }
+  60%  { transform: scale(1.15); }
+  100% { transform: scale(1); opacity: 1; }
+}
+.star-pop { animation: starPop 0.5s var(--ease-out, ease-out) both; }
+
+@keyframes fadeUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+.fade-up { animation: fadeUp var(--dur-base, 220ms) var(--ease-out, ease-out); }
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-7px); }
+  40% { transform: translateX(7px); }
+  60% { transform: translateX(-5px); }
+  80% { transform: translateX(5px); }
+}
+.shake { animation: shake 0.4s ease; }
+
+@keyframes slideInNext { from { opacity: 0; transform: translateX(26px); } to { opacity: 1; transform: none; } }
+@keyframes slideInPrev { from { opacity: 0; transform: translateX(-26px); } to { opacity: 1; transform: none; } }
+.slide-next { animation: slideInNext 0.26s var(--ease-out); }
+.slide-prev { animation: slideInPrev 0.26s var(--ease-out); }
+
+/* ----- Mascot ----- */
+.mascot { display: inline-block; transform-origin: 50% 92%; }
+@keyframes mascotBreathe {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50%      { transform: translateY(-3px) scale(1.015); }
+}
+.mascot-idle { animation: mascotBreathe 2.8s ease-in-out infinite; }
+@keyframes mascotCheer {
+  0%   { transform: translateY(0) scale(1, 1); }
+  25%  { transform: translateY(-22px) scale(1.05, 0.96); }
+  50%  { transform: translateY(0) scale(0.96, 1.05); }
+  72%  { transform: translateY(-9px) scale(1.02, 0.99); }
+  100% { transform: translateY(0) scale(1, 1); }
+}
+.mascot-cheer { animation: mascotCheer 0.75s var(--ease-spring); }
+
+/* ----- Confetti ----- */
+.confetti-piece {
+  position: fixed; width: 9px; height: 9px; border-radius: 2px;
+  z-index: 60; pointer-events: none; will-change: transform, opacity;
+  animation: confettiFly 1s ease-out forwards;
+}
+@keyframes confettiFly {
+  0%   { transform: translate(0, 0) rotate(0deg); opacity: 1; }
+  100% { transform: translate(var(--dx), var(--dy)) rotate(var(--rot)); opacity: 0; }
+}
+
+/* ----- Journey scene backdrop ----- */
+/* Drop the background art at /assets/journey/scene-bg.jpg to replace the gradient. */
+.journey-scene {
+  background-image: url(/assets/journey/scene-bg.jpg),
+    linear-gradient(180deg, #bfe3f5 0%, #cfe9c2 58%, #a7cf7c 100%);
+  background-size: cover, cover;
+  background-position: center top, center;
+  background-repeat: no-repeat, no-repeat;
+}
+
+/* ----- Mascot mood transitions: each mood change fades in ----- */
+.mascot picture { animation: mascotFadeIn 0.45s ease both; }
+@keyframes mascotFadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+/* ----- Journey P3 comic-panel screen ----- */
+.journey-dotbg {
+  background-color: #FBF6EC;
+  background-image: radial-gradient(rgba(122, 90, 217, 0.10) 1.5px, transparent 1.5px);
+  background-size: 14px 14px;
+}
+.card-rail {
+  display: flex;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.card-rail::-webkit-scrollbar { display: none; }
+.qcard-inner { transition: transform 0.18s ease, opacity 0.18s ease; }
+.qcard-commit { transform: translateY(-8px) scale(1.05); }
+
+/* ----- Typewriter caret (talking bubbles) ----- */
+.type-caret {
+  display: inline-block; margin-left: 1px; color: var(--coral-500);
+  animation: caretBlink 0.7s steps(1) infinite;
+}
+@keyframes caretBlink { 0%, 50% { opacity: 1; } 50.01%, 100% { opacity: 0; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .quest-pulse, .mic-live, .star-pop, .fade-up, .shake, .slide-next, .slide-prev,
+  .mascot-idle, .mascot-cheer, .confetti-piece, .type-caret { animation: none; }
+  .mascot picture { animation: none; }
+  .qcard-inner { transition: none; }
+}
