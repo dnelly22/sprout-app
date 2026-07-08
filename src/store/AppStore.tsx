@@ -40,8 +40,9 @@ export interface Settings {
   plan?: 'free' | 'trial' | 'premium' | 'plus'; // 'plus' = legacy name for premium
   trialStart?: number;     // epoch ms; set when the trial starts
   admin?: boolean;         // unlocked via admin code: premium access + admin tools
-  tourParentDone?: boolean; // first-run tutorial flags
+  tourParentDone?: boolean; // legacy card-tutorial flags (superseded by tourDone)
   tourKidDone?: boolean;
+  tourDone?: boolean;       // guided first-run tour (Kid Zone → progress → library)
 }
 
 export type RwcStatus = 'new' | 'trying' | 'did' | 'verified';

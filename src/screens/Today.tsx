@@ -7,7 +7,6 @@ import { popBg, PopCard, SectionHead, InkChip, InkBar, ArrowCoin, PopButton, INK
 import { AREAS, areaParentLabel, emptyAreaScores, type AreaKey } from '../constants/areas';
 import { REWARD } from '../engine/economy';
 import { usePlan } from '../engine/plan';
-import { Tutorial, PARENT_TOUR } from '../components/Tutorial';
 import type { Child } from '../types';
 import { AGE_GROUPS } from './onboarding/Onboarding';
 
@@ -233,9 +232,6 @@ export function Today() {
 
       <FamilyHub open={hubOpen} onClose={() => setHubOpen(false)} />
       <NotificationsSheet open={notifOpen} onClose={() => setNotifOpen(false)} items={notifItems} />
-      {!state.settings.tourParentDone && (
-        <Tutorial steps={PARENT_TOUR} mascot onDone={() => dispatch({ type: 'updateSettings', patch: { tourParentDone: true } })} />
-      )}
     </div>
   );
 }

@@ -8,7 +8,7 @@ import { useSoundMaster } from '../../audio/MusicProvider';
 import { sfx } from '../../audio/sfx';
 import { learningStreak } from '../../engine/economy';
 import { usePlan, FREE_SCENARIO_ID } from '../../engine/plan';
-import { Tutorial, KID_TOUR } from '../../components/Tutorial';
+import { useTour } from '../../components/GuidedTour';
 import { AREA_TO_JOURNEY } from '../../data/journey';
 import { KidQuest } from './KidQuest';
 import { KidProgress } from './KidProgress';
@@ -25,12 +25,15 @@ const BossFlow = lazy(() => import('./BossFlow').then((m) => ({ default: m.BossF
 export type GameKind = 'quickfire' | 'journey' | 'sayit';
 
 export function KidZone() {
-  const { activeChild, state, dispatch } = useApp();
+  const { activeChild, state } = useApp();
   const navigate = useNavigate();
   const plan = usePlan();
+  const tour = useTour();
   const child = activeChild;
 
-  const [entered, setEntered] = useState(false);
+  // During the guided tour the parent is watching — skip the "hand phone over" gate.
+  const [entered, setEntered] = useState(tour.active && tour.stepId === 'kid');
+  useEffect(() => { if (tour.active && tour.stepId === 'kid') setEntered(true); }, [tour.active, tour.stepId]);
   const [view, setView] = useState<'quest' | 'me'>('quest');
   const [game, setGame] = useState<GameKind | null>(null);
   const [boss, setBoss] = useState(false);
@@ -165,9 +168,6 @@ export function KidZone() {
   return (
     <>
       {content}
-      {entered && !game && !boss && !journeyArea && !state.settings.tourKidDone && (
-        <Tutorial steps={KID_TOUR} mascot onDone={() => dispatch({ type: 'updateSettings', patch: { tourKidDone: true } })} />
-      )}
       <ParentGateSheet open={parentGate} onClose={() => setParentGate(false)} onPass={() => { setParentGate(false); navigate('/plans'); }} />
       <CelebrationOverlay />
     </>
