@@ -150,18 +150,19 @@ function FieldLabel({ children }: { children: React.ReactNode }) {
 
 /* ---------- flow ---------- */
 
-type Screen = 'splash' | 'welcome' | 'signup' | 'consent' | 'child' | 'trial' | 'notif' | 'quiz1' | 'quiz2' | 'quiz3' | 'result' | 'meet' | 'allset';
-const ORDER: Screen[] = ['splash', 'welcome', 'signup', 'consent', 'child', 'trial', 'notif', 'quiz1', 'quiz2', 'quiz3', 'result', 'meet', 'allset'];
+// Web version: no login/register (the app is local-only — a password would be
+// fake friction). Straight from welcome into a lightweight "add child" setup.
+type Screen = 'splash' | 'welcome' | 'child' | 'trial' | 'notif' | 'quiz1' | 'quiz2' | 'quiz3' | 'result' | 'meet' | 'allset';
+const ORDER: Screen[] = ['splash', 'welcome', 'child', 'trial', 'notif', 'quiz1', 'quiz2', 'quiz3', 'result', 'meet', 'allset'];
 // 'allset' is the success screen — no progress header
-const STEP: Partial<Record<Screen, number>> = { signup: 1, consent: 2, child: 3, trial: 4, notif: 5, quiz1: 6, quiz2: 7, quiz3: 8, result: 9, meet: 10 };
+const STEP: Partial<Record<Screen, number>> = { child: 1, trial: 2, notif: 3, quiz1: 4, quiz2: 5, quiz3: 6, result: 7, meet: 8 };
+const TOTAL_STEPS = 8;
 
 export function Onboarding() {
   const { dispatch } = useApp();
   const navigate = useNavigate();
   const [screen, setScreen] = useState<Screen>('splash');
   const [email, setEmail] = useState('');
-  const [pw, setPw] = useState('');
-  const [agree, setAgree] = useState(false);
   const [draft, setDraft] = useState<Draft>({ name: '', age: 7, ageLabel: '6–8', color: KID_COLORS[4] });
   const [allowNotifs, setAllowNotifs] = useState(true);
   const [answers, setAnswers] = useState<number[]>([-1, -1, -1]);
@@ -205,20 +206,18 @@ export function Onboarding() {
             <Icon name="arrow-left" size={20} color={INK} />
           </button>
           <div style={{ flex: 1, display: 'flex', gap: 3 }}>
-            {Array.from({ length: 10 }).map((_, i) => (
+            {Array.from({ length: TOTAL_STEPS }).map((_, i) => (
               <span key={i} style={{ flex: 1, height: 8, border: `2px solid ${INK}`, borderRadius: 5, background: i < step ? 'var(--grape-400)' : '#fff' }} />
             ))}
           </div>
-          <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 12, color: 'var(--grape-600)' }}>{step}/10</span>
+          <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 12, color: 'var(--grape-600)' }}>{step}/{TOTAL_STEPS}</span>
         </div>
       )}
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: step ? '14px 24px 24px' : '0 0 24px', overflowY: 'auto' }}>
         {screen === 'splash' && <Splash onGo={next} />}
         {screen === 'welcome' && <Welcome onNext={next} />}
-        {screen === 'signup' && <SignUp email={email} setEmail={setEmail} pw={pw} setPw={setPw} kid={kid} onNext={next} />}
-        {screen === 'consent' && <Consent agree={agree} setAgree={setAgree} onNext={next} />}
-        {screen === 'child' && <AddChild draft={draft} setDraft={setDraft} onNext={next} />}
+        {screen === 'child' && <AddChild draft={draft} setDraft={setDraft} email={email} setEmail={setEmail} onNext={next} />}
         {screen === 'trial' && <TrialStep onPick={(p) => { if (p === 'trial') trackOnce('start_trial', 'StartTrial', { via: 'onboarding', currency: 'USD', predicted_ltv: 99 }); dispatch({ type: 'updateSettings', patch: p === 'trial' ? { plan: 'trial', trialStart: Date.now() } : { plan: 'free' } }); next(); }} />}
         {screen === 'notif' && <Notifications kid={kid} onPick={(allow) => { setAllowNotifs(allow); next(); }} />}
         {(screen === 'quiz1' || screen === 'quiz2' || screen === 'quiz3') && (
@@ -262,17 +261,8 @@ function Splash({ onGo }: { onGo: () => void }) {
       </div>
       <div style={{ padding: '0 24px' }}>
         <EButton onClick={onGo}>Let’s Go!</EButton>
-        <LoginNote />
       </div>
     </>
-  );
-}
-
-function LoginNote() {
-  return (
-    <div style={{ textAlign: 'center', marginTop: 13, fontSize: 13, color: 'var(--ink-400)', fontWeight: 700 }}>
-      Already have an account? <span style={{ color: 'var(--grape-600)' }}>Log in</span>
-    </div>
   );
 }
 
@@ -305,103 +295,24 @@ function Welcome({ onNext }: { onNext: () => void }) {
   );
 }
 
-/* ---------- 03 · Sign up ---------- */
-function SignUp({ email, setEmail, pw, setPw, kid, onNext }: {
-  email: string; setEmail: (v: string) => void; pw: string; setPw: (v: string) => void; kid: string; onNext: () => void;
-}) {
-  const [socialNote, setSocialNote] = useState(false);
-  const valid = /.+@.+\..+/.test(email.trim()) && pw.length >= 6;
-  const soc = (glyph: React.ReactNode, label: string) => (
-    <button
-      onClick={() => setSocialNote(true)}
-      style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: 12, background: '#fff', border: `2.5px solid ${INK}`, borderRadius: 99, boxShadow: '2px 3px 0 var(--grape-300)', color: INK, fontWeight: 800, fontSize: 13.5, cursor: 'pointer' }}
-    >
-      {glyph}{label}
-    </button>
-  );
-  return (
-    <>
-      <Eyebrow>Create account</Eyebrow>
-      <H1 text="Create your account" grape="account" />
-      <Sub>Grown-ups set things up — {kid === 'your child' ? 'your child' : kid} gets their own space later.</Sub>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 11 }}>
-        <EInput icon="mail" value={email} onChange={setEmail} type="email" placeholder="Email address" />
-        <EInput icon="lock" value={pw} onChange={setPw} type="password" placeholder="Password (6+ characters)" />
-      </div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '18px 0 0', color: 'var(--ink-400)', fontSize: 12, fontWeight: 800 }}>
-        <span style={{ flex: 1, height: 1.5, background: 'var(--border)' }} />OR<span style={{ flex: 1, height: 1.5, background: 'var(--border)' }} />
-      </div>
-      <div style={{ display: 'flex', gap: 10, marginTop: 12 }}>
-        {soc(<Icon name="apple" size={17} color={INK} />, 'Apple')}
-        {soc(<span style={{ width: 17, textAlign: 'center', fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 15, lineHeight: 1, color: GRAPE }}>G</span>, 'Google')}
-      </div>
-      {socialNote && (
-        <div style={{ textAlign: 'center', marginTop: 10, fontSize: 12.5, fontWeight: 700, color: 'var(--coral-600)' }}>
-          Apple &amp; Google sign-in are coming soon — use email for now.
-        </div>
-      )}
-      <div style={{ flex: 1, minHeight: 10 }} />
-      <EButton disabled={!valid} onClick={onNext}>Create Account</EButton>
-      <LoginNote />
-    </>
-  );
-}
-
-/* ---------- 04 · Consent ---------- */
-function Consent({ agree, setAgree, onNext }: { agree: boolean; setAgree: (v: boolean) => void; onNext: () => void }) {
-  const pts: [string, string, string][] = [
-    ['shield-check', 'You’re in control', 'Kid Zone sits behind a parent PIN. You decide what your child can reach.'],
-    ['eye-off', 'Minimal child data', 'We collect as little as possible and never sell or share it. No ads, no tracking.'],
-    ['trash-2', 'Deletable anytime', 'Remove your child’s data completely, whenever you want.'],
-  ];
-  return (
-    <>
-      <Eyebrow>Parental consent</Eyebrow>
-      <H1 text="A quick, honest privacy note" grape="honest" />
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-        {pts.map(([icon, t, d], i) => (
-          <ECard key={icon} tilt={i % 2 ? 0.4 : -0.4}>
-            <div style={{ display: 'flex', gap: 13, padding: 14 }}>
-              <span style={{ width: 40, height: 40, borderRadius: '50%', background: 'var(--grape-100)', border: `2.5px solid ${INK}`, display: 'grid', placeItems: 'center', flex: 'none' }}>
-                <Icon name={icon} size={19} color={INK} />
-              </span>
-              <div>
-                <div style={{ fontWeight: 800, fontSize: 15, color: INK }}>{t}</div>
-                <div style={{ fontSize: 13.5, color: 'var(--ink-500)', lineHeight: 1.45, marginTop: 2 }}>{d}</div>
-              </div>
-            </div>
-          </ECard>
-        ))}
-      </div>
-      <button
-        onClick={() => setAgree(!agree)}
-        style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 16, padding: '14px 16px', background: '#fff', border: `2.5px solid ${INK}`, boxShadow: '3px 4px 0 var(--grape-300)', borderRadius: 99, cursor: 'pointer', textAlign: 'left' }}
-      >
-        <span style={{ width: 46, height: 28, borderRadius: 99, background: agree ? GRAPE : 'var(--grape-100)', position: 'relative', flex: 'none', transition: 'background .15s' }}>
-          <span style={{ position: 'absolute', top: 3, left: agree ? 21 : 3, width: 22, height: 22, borderRadius: '50%', background: '#fff', boxShadow: 'var(--shadow-sm)', transition: 'left .15s' }} />
-        </span>
-        <span style={{ fontWeight: 800, fontSize: 14, color: INK }}>I’m the parent or guardian</span>
-      </button>
-      <div style={{ flex: 1, minHeight: 10 }} />
-      <EButton disabled={!agree} onClick={onNext}>I Agree — Continue</EButton>
-    </>
-  );
-}
-
 /* ---------- 05 · Add child ---------- */
-function AddChild({ draft, setDraft, onNext }: { draft: Draft; setDraft: React.Dispatch<React.SetStateAction<Draft>>; onNext: () => void }) {
+function AddChild({ draft, setDraft, email, setEmail, onNext }: {
+  draft: Draft; setDraft: React.Dispatch<React.SetStateAction<Draft>>;
+  email: string; setEmail: (v: string) => void; onNext: () => void;
+}) {
   const initial = (draft.name.trim() || 'M').charAt(0).toUpperCase();
+  const emailOk = !email.trim() || /.+@.+\..+/.test(email.trim());
   return (
     <>
-      <Eyebrow>Add a child</Eyebrow>
+      <Eyebrow>Let’s set up</Eyebrow>
       <H1 text="Who are we cheering on?" grape="cheering on?" />
-      <Sub>You can add more children later in Settings.</Sub>
+      <Sub>No account or password needed — just tell us who’s playing. Add more children later in Settings.</Sub>
       <div style={{ textAlign: 'center', marginBottom: 18 }}>
         <span style={{ display: 'inline-grid', placeItems: 'center', width: 84, height: 84, borderRadius: '50%', background: draft.color, border: `2.5px solid ${INK}`, boxShadow: '4px 5px 0 var(--grape-300)', fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 34, color: '#fff' }}>
           {initial}
         </span>
       </div>
-      <EInput icon="user" value={draft.name} onChange={(v) => setDraft((d) => ({ ...d, name: v }))} placeholder="First name" />
+      <EInput icon="user" value={draft.name} onChange={(v) => setDraft((d) => ({ ...d, name: v }))} placeholder="Child’s first name" />
       <FieldLabel>Age group</FieldLabel>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 8 }}>
         {AGE_GROUPS.map((g) => {
@@ -419,8 +330,13 @@ function AddChild({ draft, setDraft, onNext }: { draft: Draft; setDraft: React.D
           <button key={c} onClick={() => setDraft((d) => ({ ...d, color: c }))} aria-label="Pick color" style={{ width: 40, height: 40, borderRadius: '50%', background: c, border: `3px solid ${draft.color === c ? INK : '#fff'}`, boxShadow: 'var(--shadow-sm)', cursor: 'pointer', padding: 0 }} />
         ))}
       </div>
-      <div style={{ flex: 1, minHeight: 10 }} />
-      <EButton disabled={!draft.name.trim()} onClick={onNext}>Continue</EButton>
+      <FieldLabel>Your email (optional)</FieldLabel>
+      <EInput icon="mail" value={email} onChange={setEmail} type="email" placeholder="For receipts & tips — skip if you like" />
+      <div style={{ flex: 1, minHeight: 14 }} />
+      <EButton disabled={!draft.name.trim() || !emailOk} onClick={onNext}>Continue</EButton>
+      <div style={{ textAlign: 'center', marginTop: 12, fontSize: 12, fontWeight: 700, color: 'var(--ink-400)', lineHeight: 1.5 }}>
+        By continuing you confirm you’re a grown-up setting this up for your child.
+      </div>
     </>
   );
 }
