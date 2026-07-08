@@ -5,7 +5,7 @@ import {
   Recommendation, Offer, Progress, InstallSheet, type Opt, type Creative,
 } from './ui';
 import {
-  detectEnv, resolveEnv, track, trackCustom, trackOnce, KID_MAP, KID_DESC, PARENT_MAP, STATE_KEY, INTAKE_KEY, type Env,
+  detectEnv, resolveEnv, track, trackCustom, trackOnce, captureClickId, KID_MAP, KID_DESC, PARENT_MAP, STATE_KEY, INTAKE_KEY, type Env,
 } from './env';
 
 /* ---- ad creatives (set per ad via ?angle=freeze|meltdown|hangback) ---- */
@@ -105,7 +105,7 @@ export function Funnel() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [beat]);
 
-  useEffect(() => { track('ViewContent', { content_name: 'funnel_v2_hook', angle }); }, [angle]);
+  useEffect(() => { captureClickId(); track('ViewContent', { content_name: 'funnel_v2_hook', angle }); }, [angle]);
   useEffect(() => { if (beat === 10) track('Lead', { content_name: 'funnel_complete', kidWorld, parentTrack }); }, [beat, kidWorld, parentTrack]);
   // Opened from the home screen → an install happened (fire once, best real signal).
   useEffect(() => { if (detected === 'installed') trackOnce('a2hs', 'AddToHomeScreen', { via: 'standalone' }, true); }, [detected]);
