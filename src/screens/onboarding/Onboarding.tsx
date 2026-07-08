@@ -1,30 +1,48 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../../store/AppStore';
 import { Icon } from '../../components/ds';
 import { Mascot } from '../kidzone/Mascot';
-import { QUIZ, PARENT_POWERS, GOAL_BY_FOCUS } from '../../data/quiz';
-import { AREAS, emptyAreaScores, type AreaKey } from '../../constants/areas';
+import { PARENT_POWERS } from '../../data/quiz';
+import { AREAS, areaKidWorld, emptyAreaScores, type AreaKey } from '../../constants/areas';
 import { trackOnce } from '../../analytics';
 import type { Child, Goal } from '../../types';
 
 /*
- * Parent onboarding — design_handoff_onboarding, direction E · "Comic Pop".
- * 12 screens: Splash → Welcome → Sign up → Consent → Add child → Notifications
- * → Quiz ×3 → Profile result → Meet Sprout → All set. Screens 3–12 carry the
- * 10-segment ink progress header. Visual system: lavender halftone, 2.5px ink
- * borders, hard GRAPE shadows (ink on primary CTAs), grape-highlighted titles.
+ * Parent onboarding — web version (local-only, no login).
+ * Hook → Value+features → Parent name/email → Add child → Quiz ×4 (child ×3 +
+ * parent ×1) → Family plan → Meet Sprout → Privacy & controls → Notifications →
+ * Trial. Funnel arrivals (who answered on /start) skip the quiz. Comic Pop.
  */
 
 const INK = '#2A2521';
 const GRAPE = '#7A5AD9';
 const KID_COLORS = ['var(--grape-400)', 'var(--coral-400)', 'var(--sky-500)', 'var(--sun-500)', 'var(--green-400)', '#EC7FA0'];
-/** Age groups (friendlier than a row of numbers); `age` keeps a representative value. */
+
+/** Age groups (friendlier than a number row); `age` keeps a representative value. */
 export const AGE_GROUPS: { label: string; age: number }[] = [
-  { label: '4–5', age: 5 },
-  { label: '6–8', age: 7 },
-  { label: '9–11', age: 10 },
-  { label: '12+', age: 12 },
+  { label: '4–6', age: 5 },
+  { label: '7–9', age: 8 },
+  { label: '10–12', age: 11 },
+  { label: '13+', age: 14 },
+];
+
+/** Q3 — what the child should get better at → their starting world. */
+const CHILD_FOCUS: { label: string; area: AreaKey; goal: string }[] = [
+  { label: 'Speaking up for themselves', area: 'speakup', goal: 'speak up when they feel nervous' },
+  { label: 'Making & keeping friends', area: 'connect', goal: 'feel brave making new friends' },
+  { label: 'Brushing off teasing', area: 'listen', goal: 'stay steady when teasing happens' },
+  { label: 'Standing their ground', area: 'feelings', goal: 'set boundaries and hold their ground' },
+  { label: 'Reading people & the room', area: 'conflict', goal: 'read people and social cues' },
+];
+
+/** Q4 — what the PARENT wants to get more confident in → their library track. */
+const PARENT_FOCUS: { label: string; track: string }[] = [
+  { label: 'Getting them to open up', track: 'When They Won’t Open Up' },
+  { label: 'Big feelings & meltdowns', track: 'Big Feelings & Meltdowns' },
+  { label: 'Setting limits without a fight', track: 'Boundaries & Limits' },
+  { label: 'Hard conversations', track: 'Hard Conversations' },
+  { label: 'Communicating better myself', track: 'Connecting & Conversation' },
 ];
 
 interface Draft { name: string; age: number; ageLabel: string; color: string }
@@ -39,31 +57,16 @@ function makeChild(draft: Draft, goalId: string): Child {
     ageLabel: draft.ageLabel,
     color: draft.color,
     pronoun: { subj: 'they', obj: 'them', poss: 'their' },
-    level: 1,
-    levelName: 'Brave Beginner',
-    nextLevelName: 'Getting Bolder',
-    stars: 0,
-    starsToNext: 40,
-    streak: 0,
+    level: 1, levelName: 'Seed', nextLevelName: 'Tiny Sprout',
+    stars: 0, starsToNext: 100, streak: 0,
     areaScores: baseline,
     growing: { area: 'speakup', note: 'Just getting started' },
-    weeks: [50],
-    missionsDone: 0,
-    scenariosMastered: 0,
-    questProgress: 0,
-    currentGoalId: goalId,
-    wins: [],
-    badges: [
-      { key: 'first',  label: 'First Steps',      icon: 'footprints', earned: false },
-      { key: 'real',   label: 'Real-World Brave', icon: 'globe',      earned: false },
-      { key: 'streak', label: '3-Week Streak',    icon: 'flame',      earned: false },
-      { key: 'champ',  label: 'Champion',         icon: 'crown',      earned: false },
-    ],
+    weeks: [50], missionsDone: 0, scenariosMastered: 0, questProgress: 0,
+    currentGoalId: goalId, wins: [], badges: [],
   };
 }
 
-/* ---------- E design primitives ---------- */
-
+/* ---------- Comic Pop primitives ---------- */
 const dotBg: React.CSSProperties = {
   backgroundColor: '#F6F1FF',
   backgroundImage: 'radial-gradient(rgba(122,90,217,.13) 1.5px, transparent 1.5px)',
@@ -74,51 +77,32 @@ function EButton({ children, ghost, disabled, onClick }: {
   children: React.ReactNode; ghost?: boolean; disabled?: boolean; onClick?: () => void;
 }) {
   return (
-    <button
-      onClick={onClick}
-      disabled={disabled}
-      style={{
-        width: '100%', minHeight: 54, borderRadius: 99, border: `2.5px solid ${INK}`, cursor: disabled ? 'default' : 'pointer',
-        fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 17, padding: '13px 18px',
-        background: ghost ? '#fff' : GRAPE, color: ghost ? INK : '#fff',
-        boxShadow: ghost ? '3px 4px 0 var(--grape-300)' : '4px 5px 0 rgba(42,37,33,.9)',
-        opacity: disabled ? 0.45 : 1,
-      }}
-    >
+    <button onClick={onClick} disabled={disabled}
+      style={{ width: '100%', minHeight: 54, borderRadius: 99, border: `2.5px solid ${INK}`, cursor: disabled ? 'default' : 'pointer', fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 17, padding: '13px 18px', background: ghost ? '#fff' : GRAPE, color: ghost ? INK : '#fff', boxShadow: ghost ? '3px 4px 0 var(--grape-300)' : '4px 5px 0 rgba(42,37,33,.9)', opacity: disabled ? 0.45 : 1 }}>
       {children}
     </button>
   );
 }
-
 function Eyebrow({ children }: { children: React.ReactNode }) {
   return (
     <div style={{ marginBottom: 12 }}>
-      <span style={{
-        display: 'inline-flex', alignItems: 'center', gap: 6, transform: 'rotate(-1.2deg)',
-        background: '#FFF3D6', border: `2px solid ${INK}`, color: '#D2542F',
-        fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 11, letterSpacing: '.08em',
-        padding: '4px 12px', borderRadius: 99, boxShadow: '2px 3px 0 rgba(42,37,33,.85)', textTransform: 'uppercase',
-      }}>✦ {children}</span>
+      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, transform: 'rotate(-1.2deg)', background: '#FFF3D6', border: `2px solid ${INK}`, color: '#D2542F', fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 11, letterSpacing: '.08em', padding: '4px 12px', borderRadius: 99, boxShadow: '2px 3px 0 rgba(42,37,33,.85)', textTransform: 'uppercase' }}>✦ {children}</span>
     </div>
   );
 }
-
-/** Title with ONE grape-highlighted phrase. */
 function H1({ text, grape }: { text: string; grape?: string }) {
   const parts = grape ? text.split(grape) : [text];
   return (
-    <h1 style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 34, lineHeight: 1.12, color: INK, margin: '0 0 12px' }}>
+    <h1 style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 32, lineHeight: 1.12, color: INK, margin: '0 0 12px' }}>
       {grape && parts.length > 1
         ? <>{parts[0]}<span style={{ color: GRAPE }}>{grape}</span>{parts.slice(1).join(grape)}</>
         : text}
     </h1>
   );
 }
-
 function Sub({ children }: { children: React.ReactNode }) {
   return <p style={{ color: 'var(--ink-500)', fontSize: 15.5, lineHeight: 1.55, margin: '0 0 20px' }}>{children}</p>;
 }
-
 function ECard({ children, tilt = 0, style }: { children: React.ReactNode; tilt?: number; style?: React.CSSProperties }) {
   return (
     <div style={{ background: '#fff', border: `2.5px solid ${INK}`, borderRadius: 20, boxShadow: '4px 5px 0 var(--grape-300)', transform: tilt ? `rotate(${tilt}deg)` : undefined, ...style }}>
@@ -126,187 +110,202 @@ function ECard({ children, tilt = 0, style }: { children: React.ReactNode; tilt?
     </div>
   );
 }
-
 function EInput({ icon, value, onChange, type = 'text', placeholder }: {
   icon: string; value: string; onChange: (v: string) => void; type?: string; placeholder: string;
 }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 11, background: '#fff', border: `2.5px solid ${INK}`, borderRadius: 18, boxShadow: '3px 4px 0 var(--grape-300)', padding: '14px 16px' }}>
       <Icon name={icon} size={19} color={INK} />
-      <input
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        type={type}
-        placeholder={placeholder}
-        style={{ flex: 1, minWidth: 0, border: 'none', outline: 'none', background: 'transparent', fontFamily: 'var(--font-body)', fontWeight: 700, fontSize: 15.5, color: INK }}
-      />
+      <input value={value} onChange={(e) => onChange(e.target.value)} type={type} placeholder={placeholder}
+        style={{ flex: 1, minWidth: 0, border: 'none', outline: 'none', background: 'transparent', fontFamily: 'var(--font-body)', fontWeight: 700, fontSize: 15.5, color: INK }} />
     </div>
   );
 }
-
 function FieldLabel({ children }: { children: React.ReactNode }) {
   return <div style={{ fontSize: 12, fontWeight: 800, color: 'var(--ink-400)', textTransform: 'uppercase', letterSpacing: '.06em', margin: '16px 0 8px' }}>{children}</div>;
 }
 
 /* ---------- flow ---------- */
-
-// Web version: no login/register (the app is local-only — a password would be
-// fake friction). Straight from welcome into a lightweight "add child" setup.
-type Screen = 'splash' | 'welcome' | 'child' | 'trial' | 'notif' | 'quiz1' | 'quiz2' | 'quiz3' | 'result' | 'meet' | 'allset';
-const ORDER: Screen[] = ['splash', 'welcome', 'child', 'trial', 'notif', 'quiz1', 'quiz2', 'quiz3', 'result', 'meet', 'allset'];
-// 'allset' is the success screen — no progress header
-const STEP: Partial<Record<Screen, number>> = { child: 1, trial: 2, notif: 3, quiz1: 4, quiz2: 5, quiz3: 6, result: 7, meet: 8 };
-const TOTAL_STEPS = 8;
+type Screen = 'hook' | 'value' | 'parent' | 'child' | 'quiz1' | 'quiz2' | 'quiz3' | 'quiz4' | 'plan' | 'meet' | 'privacy' | 'notif' | 'trial';
+const FLOW_ALL: Screen[] = ['hook', 'value', 'parent', 'child', 'quiz1', 'quiz2', 'quiz3', 'quiz4', 'plan', 'meet', 'privacy', 'notif', 'trial'];
 
 export function Onboarding() {
   const { dispatch } = useApp();
   const navigate = useNavigate();
-  const [screen, setScreen] = useState<Screen>('splash');
+
+  // Came through the /start funnel? Then they already answered the quiz — skip it.
+  const intake = useRef<{ kidWorld?: string; parentTrack?: string } | null>(
+    (() => { try { return JSON.parse(localStorage.getItem('sprout_intake') || 'null'); } catch { return null; } })(),
+  ).current;
+  const funnelUser = !!intake;
+  const FLOW = funnelUser ? FLOW_ALL.filter((s) => !s.startsWith('quiz')) : FLOW_ALL;
+
+  const [screen, setScreen] = useState<Screen>('hook');
+  const [parentName, setParentName] = useState('');
   const [email, setEmail] = useState('');
-  const [draft, setDraft] = useState<Draft>({ name: '', age: 7, ageLabel: '6–8', color: KID_COLORS[4] });
+  const [draft, setDraft] = useState<Draft>({ name: '', age: 8, ageLabel: '7–9', color: KID_COLORS[4] });
+  const [a1, setA1] = useState(-1); // Q1 situational → parent profile
+  const [a2, setA2] = useState(-1); // Q2 situational → tuning
+  const [a3, setA3] = useState(-1); // Q3 child focus → starting world
+  const [a4, setA4] = useState(-1); // Q4 parent focus → library track
   const [allowNotifs, setAllowNotifs] = useState(true);
-  const [answers, setAnswers] = useState<number[]>([-1, -1, -1]);
 
   const kid = draft.name.trim() || 'your child';
-  const next = () => setScreen(ORDER[Math.min(ORDER.length - 1, ORDER.indexOf(screen) + 1)]);
-  const back = () => setScreen(ORDER[Math.max(0, ORDER.indexOf(screen) - 1)]);
+  const idx = FLOW.indexOf(screen);
+  const next = () => setScreen(FLOW[Math.min(FLOW.length - 1, idx + 1)]);
+  const back = () => setScreen(FLOW[Math.max(0, idx - 1)]);
 
-  const power = PARENT_POWERS[answers[0] >= 0 ? Math.min(answers[0], PARENT_POWERS.length - 1) : 1];
-  const focus = GOAL_BY_FOCUS[answers[2] >= 0 ? Math.min(answers[2], GOAL_BY_FOCUS.length - 1) : 0];
+  // Derived plan (from quiz, or the funnel's answers for funnel users).
+  const childFocus = CHILD_FOCUS[a3 >= 0 ? a3 : 0];
+  const childArea: AreaKey = funnelUser
+    ? (AREAS.find((a) => a.kidWorld === intake?.kidWorld)?.key ?? 'speakup')
+    : childFocus.area;
+  const childWorld = funnelUser ? (intake?.kidWorld || areaKidWorld(childArea)) : areaKidWorld(childArea);
+  const childGoal = funnelUser ? 'grow their communication confidence' : childFocus.goal;
+  const parentTrack = funnelUser ? (intake?.parentTrack || 'When They Won’t Open Up') : PARENT_FOCUS[a4 >= 0 ? a4 : 0].track;
+  const power = PARENT_POWERS[a1 >= 0 ? Math.min(a1, PARENT_POWERS.length - 1) : 1];
 
-  const finish = () => {
+  const finish = (plan: 'trial' | 'free') => {
     const goalId = `goal-${Date.now()}`;
     const child = makeChild(draft, goalId);
-    const feel = child.pronoun.subj === 'they' ? 'feel' : 'feels';
     const goal: Goal = {
-      id: goalId, childId: child.id, area: focus.area,
-      statement: focus.statement.replace('{name}', child.name).replace('{subj}', child.pronoun.subj).replace('{feel}', feel),
-      status: 'active',
+      id: goalId, childId: child.id, area: childArea,
+      statement: `Help ${child.name} ${childGoal}`, status: 'active',
     };
-    dispatch({ type: 'completeOnboarding', parent: { email, consentGiven: true, type: power.type }, child, goal });
+    if (plan === 'trial') trackOnce('start_trial', 'StartTrial', { via: 'onboarding', currency: 'USD', predicted_ltv: 99 });
+    dispatch({ type: 'updateSettings', patch: plan === 'trial' ? { plan: 'trial', trialStart: Date.now() } : { plan: 'free' } });
+    dispatch({ type: 'completeOnboarding', parent: { name: parentName.trim(), email: email.trim(), consentGiven: true, type: power.type }, child, goal });
     dispatch({ type: 'updateSettings', patch: { notifications: allowNotifs } });
-    dispatch({ type: 'awardStars', childId: child.id, stars: 10 }); // +10 stars for finishing setup
-    // Funnel pass-through: if the parent came through /start, point Kid Zone at
-    // the world their answers recommended (skips re-quizzing).
-    try {
-      const intake = JSON.parse(localStorage.getItem('sprout_intake') || 'null');
-      const world = intake?.kidWorld as string | undefined;
-      const area = world && AREAS.find((a) => a.kidWorld === world)?.key;
-      if (area) dispatch({ type: 'recommendArea', childId: child.id, area });
-    } catch { /* ignore */ }
+    dispatch({ type: 'awardStars', childId: child.id, stars: 10 });
+    dispatch({ type: 'recommendArea', childId: child.id, area: childArea });
     navigate('/today', { replace: true });
   };
 
-  const step = STEP[screen];
+  const showHeader = screen !== 'hook';
   return (
     <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column', ...dotBg }}>
-      {step && (
+      {showHeader && (
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: 'calc(env(safe-area-inset-top, 0px) + 16px) 24px 4px' }}>
           <button onClick={back} aria-label="Back" style={{ border: 'none', background: 'none', cursor: 'pointer', padding: 4, display: 'grid', placeItems: 'center' }}>
             <Icon name="arrow-left" size={20} color={INK} />
           </button>
           <div style={{ flex: 1, display: 'flex', gap: 3 }}>
-            {Array.from({ length: TOTAL_STEPS }).map((_, i) => (
-              <span key={i} style={{ flex: 1, height: 8, border: `2px solid ${INK}`, borderRadius: 5, background: i < step ? 'var(--grape-400)' : '#fff' }} />
+            {FLOW.slice(1).map((s, i) => (
+              <span key={s} style={{ flex: 1, height: 8, border: `2px solid ${INK}`, borderRadius: 5, background: i < idx ? 'var(--grape-400)' : '#fff' }} />
             ))}
           </div>
-          <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 12, color: 'var(--grape-600)' }}>{step}/{TOTAL_STEPS}</span>
         </div>
       )}
 
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: step ? '14px 24px 24px' : '0 0 24px', overflowY: 'auto' }}>
-        {screen === 'splash' && <Splash onGo={next} />}
-        {screen === 'welcome' && <Welcome onNext={next} />}
-        {screen === 'child' && <AddChild draft={draft} setDraft={setDraft} email={email} setEmail={setEmail} onNext={next} />}
-        {screen === 'trial' && <TrialStep onPick={(p) => { if (p === 'trial') trackOnce('start_trial', 'StartTrial', { via: 'onboarding', currency: 'USD', predicted_ltv: 99 }); dispatch({ type: 'updateSettings', patch: p === 'trial' ? { plan: 'trial', trialStart: Date.now() } : { plan: 'free' } }); next(); }} />}
-        {screen === 'notif' && <Notifications kid={kid} onPick={(allow) => { setAllowNotifs(allow); next(); }} />}
-        {(screen === 'quiz1' || screen === 'quiz2' || screen === 'quiz3') && (
-          <Quiz
-            qi={screen === 'quiz1' ? 0 : screen === 'quiz2' ? 1 : 2}
-            kid={kid}
-            selected={answers[screen === 'quiz1' ? 0 : screen === 'quiz2' ? 1 : 2]}
-            onPick={(qi, oi) => {
-              setAnswers((a) => { const n = [...a]; n[qi] = oi; return n; });
-              window.setTimeout(next, 350);
-            }}
-          />
-        )}
-        {screen === 'result' && <Result power={power} kid={kid} onNext={next} />}
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: showHeader ? '14px 24px 24px' : '0 0 24px', overflowY: 'auto' }}>
+        {screen === 'hook' && <Hook onNext={next} />}
+        {screen === 'value' && <Value onNext={next} />}
+        {screen === 'parent' && <ParentInfo name={parentName} setName={setParentName} email={email} setEmail={setEmail} onNext={next} />}
+        {screen === 'child' && <AddChild draft={draft} setDraft={setDraft} onNext={next} />}
+        {screen === 'quiz1' && <Quiz eyebrow="A few quick questions" q={`When ${kid} comes home upset about a friend, you usually…`} options={['Jump in with advice right away', 'Ask questions and listen first', 'Give them space, then circle back']} selected={a1} onPick={(i) => { setA1(i); setTimeout(next, 320); }} />}
+        {screen === 'quiz2' && <Quiz eyebrow="A few quick questions" q={`How does ${kid} handle a brand-new group of kids?`} options={['Dives right in', 'Warms up slowly', 'Sticks close to kids they know']} selected={a2} onPick={(i) => { setA2(i); setTimeout(next, 320); }} />}
+        {screen === 'quiz3' && <Quiz eyebrow="For your child" q={`What do you most want ${kid} to get better at?`} options={CHILD_FOCUS.map((c) => c.label)} selected={a3} onPick={(i) => { setA3(i); setTimeout(next, 320); }} />}
+        {screen === 'quiz4' && <Quiz eyebrow="For you" q="And what would you like to feel more confident in?" sub="Sprout has a whole parent library too." options={PARENT_FOCUS.map((p) => p.label)} selected={a4} onPick={(i) => { setA4(i); setTimeout(next, 320); }} />}
+        {screen === 'plan' && <FamilyPlan kid={kid} childWorld={childWorld} parentTrack={parentTrack} onNext={next} />}
         {screen === 'meet' && <MeetSprout kid={kid} onNext={next} />}
-        {screen === 'allset' && <AllSet kid={kid} age={draft.ageLabel} power={power.type} onDone={finish} />}
+        {screen === 'privacy' && <Privacy onNext={next} />}
+        {screen === 'notif' && <Notifications kid={kid} onPick={(allow) => { setAllowNotifs(allow); next(); }} />}
+        {screen === 'trial' && <TrialStep onPick={finish} />}
       </div>
     </div>
   );
 }
 
-/* ---------- 01 · Splash ---------- */
-function Splash({ onGo }: { onGo: () => void }) {
+/* ---------- 01 · Hook ---------- */
+function Hook({ onNext }: { onNext: () => void }) {
   return (
-    <>
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: '0 28px', position: 'relative' }}>
-        <span style={{ position: 'absolute', top: '11%', left: '14%', fontSize: 22, color: 'var(--grape-400)' }}>✦</span>
-        <span style={{ position: 'absolute', top: '21%', right: '14%', fontSize: 16, color: 'var(--coral-400)' }}>✦</span>
-        <div style={{ transform: 'rotate(-2deg)', marginBottom: 18 }}>
-          <span style={{ display: 'inline-block', background: '#FFF3D6', border: `2.5px solid ${INK}`, borderRadius: 99, padding: '6px 16px', boxShadow: '3px 4px 0 rgba(42,37,33,.9)', fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 12, letterSpacing: '.08em', color: '#D2542F' }}>
-            LET’S PRACTICE TALKING!
-          </span>
+    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: '26px 24px 24px' }}>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+        <Eyebrow>When nobody knows what to say</Eyebrow>
+        <div style={{ alignSelf: 'center', position: 'relative', margin: '10px 0 22px' }}>
+          <span style={{ position: 'absolute', top: 6, left: -18, fontSize: 20, color: 'var(--grape-400)' }}>✦</span>
+          <span style={{ position: 'absolute', top: 18, right: -14, fontSize: 15, color: 'var(--coral-400)' }}>✦</span>
+          <div style={{ width: 208, height: 208, borderRadius: '50%', background: 'radial-gradient(circle at 50% 35%, #EAF6E2, #BFE3CB)', border: `2.5px solid ${INK}`, boxShadow: '6px 7px 0 rgba(42,37,33,.85)', position: 'relative', overflow: 'hidden' }}>
+            <span style={{ position: 'absolute', left: '50%', bottom: -14, transform: 'translateX(-50%)' }}>
+              <Mascot mood="idle" size={182} />
+            </span>
+          </div>
         </div>
-        <div style={{ width: 186, height: 186, borderRadius: '50%', background: 'radial-gradient(circle at 50% 35%, #EAF6E2, #BFE3CB)', border: `2.5px solid ${INK}`, boxShadow: '6px 7px 0 rgba(42,37,33,.85)', position: 'relative', overflow: 'hidden' }}>
-          <span style={{ position: 'absolute', left: '50%', bottom: -12, transform: 'translateX(-50%)' }}>
-            <Mascot mood="idle" size={164} />
-          </span>
-        </div>
-        <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 50, color: 'var(--grape-600)', marginTop: 20 }}>sprout</div>
-        <p style={{ color: 'var(--ink-500)', fontWeight: 700, fontSize: 16, margin: '4px 0 0', maxWidth: 250 }}>Big feelings, brave words — one game at a time.</p>
+        <H1 text="Confidence for your kid. Confidence for you." grape="Confidence for you." />
+        <Sub>Sprout coaches them through the hard moments — and coaches you through yours.</Sub>
       </div>
-      <div style={{ padding: '0 24px' }}>
-        <EButton onClick={onGo}>Let’s Go!</EButton>
-      </div>
-    </>
+      <EButton onClick={onNext}>Get started</EButton>
+      <button onClick={onNext} style={{ display: 'block', margin: '13px auto 0', border: 'none', background: 'none', fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 14, color: 'var(--grape-600)', cursor: 'pointer' }}>
+        How it works
+      </button>
+    </div>
   );
 }
 
-/* ---------- 02 · Welcome ---------- */
-function Welcome({ onNext }: { onNext: () => void }) {
-  const tiles: [string, string, string, string][] = [
-    ['messages-square', 'Real scripts', 'var(--sky-500)', '#E7F2FB'],
-    ['gamepad-2', 'Kid games', 'var(--grape-500)', 'var(--grape-100)'],
-    ['compass', 'Parent guidance', 'var(--green-500)', 'var(--green-100)'],
-    ['star', 'Earn rewards', 'var(--sun-500)', 'var(--sun-100)'],
+/* ---------- 02 · Value + feature squares ---------- */
+function Value({ onNext }: { onNext: () => void }) {
+  const tiles: [string, string, string, string, string][] = [
+    ['gamepad-2', 'Journey Games', 'Story-based practice', 'var(--grape-500)', 'var(--grape-100)'],
+    ['zap', 'Quick Fire', 'Think fast on their feet', 'var(--sky-500)', '#E7F2FB'],
+    ['mic', 'Say It Out Loud', 'Rehearse the real words', 'var(--coral-600)', '#FBE3D8'],
+    ['messages-square', 'Parent scripts', 'What to say, ready to go', 'var(--green-600)', 'var(--green-100)'],
+    ['sparkles', 'Ask Sprout', 'Instant answers for you', 'var(--grape-600)', 'var(--grape-100)'],
+    ['star', 'Stars & badges', 'Growth they can see', 'var(--sun-600)', 'var(--sun-100)'],
   ];
   return (
-    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: '28px 24px 0' }}>
+    <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
       <Eyebrow>Built for kids &amp; grown-ups</Eyebrow>
-      <H1 text="Help your child feel more confident." grape="more confident." />
-      <Sub>Practice making friends, speaking up, and handling tricky moments — together.</Sub>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-        {tiles.map(([icon, label, ic, bg], i) => (
-          <div key={label} style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 8, padding: 14, borderRadius: 18, fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 14, background: bg, color: INK, border: `2.5px solid ${INK}`, boxShadow: '3px 4px 0 rgba(42,37,33,.75)', transform: `rotate(${i % 2 ? 0.5 : -0.5}deg)` }}>
-            <span style={{ width: 38, height: 38, borderRadius: '50%', background: '#fff', border: `2px solid ${INK}`, display: 'grid', placeItems: 'center' }}>
-              <Icon name={icon} size={19} color={ic} />
+      <H1 text="Helping your child feel more confident." grape="more confident." />
+      <Sub>Everything your family needs to practice real conversations — for them, and for you.</Sub>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 11 }}>
+        {tiles.map(([icon, label, desc, ic, bg], i) => (
+          <div key={label} style={{ display: 'flex', flexDirection: 'column', gap: 7, padding: 13, borderRadius: 16, background: bg, border: `2.5px solid ${INK}`, boxShadow: '3px 4px 0 rgba(42,37,33,.7)', transform: `rotate(${i % 2 ? 0.4 : -0.4}deg)` }}>
+            <span style={{ width: 36, height: 36, borderRadius: '50%', background: '#fff', border: `2px solid ${INK}`, display: 'grid', placeItems: 'center' }}>
+              <Icon name={icon} size={18} color={ic} />
             </span>
-            {label}
+            <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 13.5, color: INK, lineHeight: 1.1 }}>{label}</div>
+            <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--ink-500)', lineHeight: 1.3 }}>{desc}</div>
           </div>
         ))}
       </div>
-      <div style={{ flex: 1, minHeight: 10 }} />
+      <div style={{ flex: 1, minHeight: 16 }} />
       <EButton onClick={onNext}>Continue</EButton>
     </div>
   );
 }
 
-/* ---------- 05 · Add child ---------- */
-function AddChild({ draft, setDraft, email, setEmail, onNext }: {
-  draft: Draft; setDraft: React.Dispatch<React.SetStateAction<Draft>>;
-  email: string; setEmail: (v: string) => void; onNext: () => void;
+/* ---------- 03 · Parent name + email (required) ---------- */
+function ParentInfo({ name, setName, email, setEmail, onNext }: {
+  name: string; setName: (v: string) => void; email: string; setEmail: (v: string) => void; onNext: () => void;
 }) {
-  const initial = (draft.name.trim() || 'M').charAt(0).toUpperCase();
-  const emailOk = !email.trim() || /.+@.+\..+/.test(email.trim());
+  const emailOk = /.+@.+\..+/.test(email.trim());
+  const ready = name.trim().length > 0 && emailOk;
   return (
     <>
-      <Eyebrow>Let’s set up</Eyebrow>
+      <Eyebrow>Your turn first</Eyebrow>
+      <H1 text="Let’s set up your account." grape="your account." />
+      <Sub>No password needed. We’ll use this to save your plan and send your receipt — never spam.</Sub>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 11 }}>
+        <EInput icon="user" value={name} onChange={setName} placeholder="Your first name" />
+        <EInput icon="mail" value={email} onChange={setEmail} type="email" placeholder="Email address" />
+      </div>
+      <div style={{ flex: 1, minHeight: 14 }} />
+      <EButton disabled={!ready} onClick={onNext}>Continue</EButton>
+      <div style={{ textAlign: 'center', marginTop: 12, fontSize: 12, fontWeight: 700, color: 'var(--ink-400)', lineHeight: 1.5 }}>
+        By continuing you confirm you’re a grown-up setting this up for your child.
+      </div>
+    </>
+  );
+}
+
+/* ---------- 04 · Add child ---------- */
+function AddChild({ draft, setDraft, onNext }: { draft: Draft; setDraft: React.Dispatch<React.SetStateAction<Draft>>; onNext: () => void }) {
+  const initial = (draft.name.trim() || 'M').charAt(0).toUpperCase();
+  return (
+    <>
+      <Eyebrow>Who are we cheering on?</Eyebrow>
       <H1 text="Who are we cheering on?" grape="cheering on?" />
-      <Sub>No account or password needed — just tell us who’s playing. Add more children later in Settings.</Sub>
+      <Sub>Add more children later in Settings.</Sub>
       <div style={{ textAlign: 'center', marginBottom: 18 }}>
         <span style={{ display: 'inline-grid', placeItems: 'center', width: 84, height: 84, borderRadius: '50%', background: draft.color, border: `2.5px solid ${INK}`, boxShadow: '4px 5px 0 var(--grape-300)', fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 34, color: '#fff' }}>
           {initial}
@@ -318,7 +317,7 @@ function AddChild({ draft, setDraft, email, setEmail, onNext }: {
         {AGE_GROUPS.map((g) => {
           const on = draft.ageLabel === g.label;
           return (
-            <button key={g.label} onClick={() => setDraft((d) => ({ ...d, age: g.age, ageLabel: g.label }))} style={{ minHeight: 46, textAlign: 'center', padding: '8px 0', borderRadius: 99, border: `2.5px solid ${INK}`, fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 14.5, background: on ? GRAPE : '#fff', color: on ? '#fff' : INK, boxShadow: on ? '2px 3px 0 rgba(42,37,33,.6)' : 'none', cursor: 'pointer' }}>
+            <button key={g.label} onClick={() => setDraft((d) => ({ ...d, age: g.age, ageLabel: g.label }))} style={{ minHeight: 46, textAlign: 'center', padding: '8px 0', borderRadius: 99, border: `2.5px solid ${INK}`, fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 14, background: on ? GRAPE : '#fff', color: on ? '#fff' : INK, boxShadow: on ? '2px 3px 0 rgba(42,37,33,.6)' : 'none', cursor: 'pointer' }}>
               {g.label}
             </button>
           );
@@ -330,18 +329,135 @@ function AddChild({ draft, setDraft, email, setEmail, onNext }: {
           <button key={c} onClick={() => setDraft((d) => ({ ...d, color: c }))} aria-label="Pick color" style={{ width: 40, height: 40, borderRadius: '50%', background: c, border: `3px solid ${draft.color === c ? INK : '#fff'}`, boxShadow: 'var(--shadow-sm)', cursor: 'pointer', padding: 0 }} />
         ))}
       </div>
-      <FieldLabel>Your email (optional)</FieldLabel>
-      <EInput icon="mail" value={email} onChange={setEmail} type="email" placeholder="For receipts & tips — skip if you like" />
-      <div style={{ flex: 1, minHeight: 14 }} />
-      <EButton disabled={!draft.name.trim() || !emailOk} onClick={onNext}>Continue</EButton>
-      <div style={{ textAlign: 'center', marginTop: 12, fontSize: 12, fontWeight: 700, color: 'var(--ink-400)', lineHeight: 1.5 }}>
-        By continuing you confirm you’re a grown-up setting this up for your child.
-      </div>
+      <div style={{ flex: 1, minHeight: 16 }} />
+      <EButton disabled={!draft.name.trim()} onClick={onNext}>Continue</EButton>
     </>
   );
 }
 
-/* ---------- 06 · Notifications ---------- */
+/* ---------- 05–08 · Quiz (child ×3 + parent ×1) ---------- */
+function Quiz({ eyebrow, q, sub, options, selected, onPick }: {
+  eyebrow: string; q: string; sub?: string; options: string[]; selected: number; onPick: (i: number) => void;
+}) {
+  return (
+    <>
+      <Eyebrow>{eyebrow}</Eyebrow>
+      <H1 text={q} />
+      <Sub>{sub || 'No wrong answers — this just tunes your plan.'}</Sub>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 2 }}>
+        {options.map((o, i) => {
+          const on = i === selected;
+          return (
+            <button key={o} onClick={() => onPick(i)}
+              style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 12, padding: '14px 15px', borderRadius: 18, border: `2.5px solid ${INK}`, background: on ? 'var(--grape-100)' : '#fff', boxShadow: on ? '4px 5px 0 var(--grape-400)' : '2px 3px 0 var(--grape-300)', transform: `rotate(${i % 2 ? 0.4 : -0.4}deg)`, cursor: 'pointer', textAlign: 'left' }}>
+              <span style={{ width: 26, height: 26, borderRadius: '50%', border: `2px solid ${INK}`, background: on ? GRAPE : '#fff', color: on ? '#fff' : INK, fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 13, display: 'grid', placeItems: 'center', flex: 'none' }}>
+                {String.fromCharCode(65 + i)}
+              </span>
+              <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 14.5, color: INK }}>{o}</span>
+            </button>
+          );
+        })}
+      </div>
+      <div style={{ flex: 1, minHeight: 10 }} />
+      <div style={{ textAlign: 'center', fontSize: 13, fontWeight: 700, color: 'var(--ink-400)' }}>Pick one to continue</div>
+    </>
+  );
+}
+
+/* ---------- 09 · Family plan (combined recommendation) ---------- */
+function FamilyPlan({ kid, childWorld, parentTrack, onNext }: { kid: string; childWorld: string; parentTrack: string; onNext: () => void }) {
+  const Tile = ({ fc, tint, icon, tag, title, meta }: { fc: string; tint: string; icon: string; tag: string; title: string; meta: string }) => (
+    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', background: tint, border: `2.5px solid ${INK}`, borderRadius: 18, boxShadow: '3px 4px 0 rgba(42,37,33,.16)', padding: '14px 13px', minHeight: 150 }}>
+      <span style={{ display: 'grid', placeItems: 'center', width: 40, height: 40, borderRadius: 12, background: fc, border: `2.5px solid ${INK}`, boxShadow: '2px 2px 0 rgba(42,37,33,.85)', marginBottom: 9 }}>
+        <Icon name={icon} size={20} color="#fff" />
+      </span>
+      <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 9.5, letterSpacing: '.05em', textTransform: 'uppercase', color: fc, marginBottom: 3 }}>{tag}</div>
+      <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 15.5, color: INK, lineHeight: 1.14 }}>{title}</div>
+      <div style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--ink-500)', lineHeight: 1.35, marginTop: 4 }}>{meta}</div>
+    </div>
+  );
+  return (
+    <>
+      <Eyebrow>Built from your answers</Eyebrow>
+      <H1 text={`Here’s where you both start 🌱`} grape="you both" />
+      <div style={{ position: 'relative', display: 'flex', gap: 14, alignItems: 'stretch', marginTop: 2 }}>
+        <Tile fc="var(--green-500)" tint="var(--green-100)" icon="globe" tag="For your child" title={childWorld} meta={`${kid} starts here — 1 Journey story a day.`} />
+        <Tile fc="var(--coral-600)" tint="var(--grape-100)" icon="chat" tag="For you" title={parentTrack} meta="Real parent scripts, ready when you need them." />
+        <span style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%,-50%)', width: 28, height: 28, borderRadius: '50%', background: 'var(--sun-300)', border: `2.5px solid ${INK}`, display: 'grid', placeItems: 'center', fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 16, color: INK, boxShadow: '2px 2px 0 rgba(42,37,33,.4)', zIndex: 2 }}>+</span>
+      </div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, margin: '14px 0 0', padding: '13px 15px', background: 'var(--sun-100)', border: `2.5px solid ${INK}`, borderRadius: 16, boxShadow: '3px 4px 0 rgba(42,37,33,.2)' }}>
+        <Icon name="sparkles" size={18} color="var(--coral-600)" />
+        <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 13, color: INK, lineHeight: 1.35 }}>Little and often wins. Even a few minutes a day builds real confidence.</span>
+      </div>
+      <div style={{ flex: 1, minHeight: 12 }} />
+      <EButton onClick={onNext}>Love it — keep going</EButton>
+    </>
+  );
+}
+
+/* ---------- 10 · Meet Sprout ---------- */
+function MeetSprout({ kid, onNext }: { kid: string; onNext: () => void }) {
+  const pts: [string, string][] = [
+    ['lock', 'Kid Zone lives behind your parent PIN'],
+    ['list-checks', 'Every kid conversation is fully scripted — no open chat, ever'],
+  ];
+  return (
+    <>
+      <Eyebrow>One more thing</Eyebrow>
+      <div style={{ display: 'flex', justifyContent: 'center', margin: '6px 0 14px' }}>
+        <Mascot mood="idle" size={150} />
+      </div>
+      <H1 text={`Meet Sprout — ${kid}’s practice buddy`} grape="Sprout" />
+      <Sub>Sprout stars in the games where {kid} rehearses tricky moments. You’ll hand the phone over inside Kid Zone.</Sub>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        {pts.map(([icon, t]) => (
+          <ECard key={icon}>
+            <div style={{ display: 'flex', gap: 12, padding: '12px 14px', alignItems: 'center' }}>
+              <Icon name={icon} size={20} color="var(--grape-600)" />
+              <span style={{ fontWeight: 700, fontSize: 13.5, color: INK, lineHeight: 1.35 }}>{t}</span>
+            </div>
+          </ECard>
+        ))}
+      </div>
+      <div style={{ flex: 1, minHeight: 10 }} />
+      <EButton onClick={onNext}>Continue</EButton>
+    </>
+  );
+}
+
+/* ---------- 11 · Privacy & parental controls ---------- */
+function Privacy({ onNext }: { onNext: () => void }) {
+  const pts: [string, string, string][] = [
+    ['lock', 'Kid Zone is PIN-locked', 'Your child can’t leave Kid Zone or reach settings without your PIN.'],
+    ['shield-check', 'Private by default', 'Minimal data, kept on your device. Never sold, never used for ads.'],
+    ['trash-2', 'Delete anytime', 'Remove your family’s data completely, whenever you want.'],
+  ];
+  return (
+    <>
+      <Eyebrow>You’re in control</Eyebrow>
+      <H1 text="Safe for kids, private for you." grape="private for you." />
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        {pts.map(([icon, t, d], i) => (
+          <ECard key={icon} tilt={i % 2 ? 0.4 : -0.4}>
+            <div style={{ display: 'flex', gap: 13, padding: 14 }}>
+              <span style={{ width: 40, height: 40, borderRadius: '50%', background: 'var(--grape-100)', border: `2.5px solid ${INK}`, display: 'grid', placeItems: 'center', flex: 'none' }}>
+                <Icon name={icon} size={19} color={INK} />
+              </span>
+              <div>
+                <div style={{ fontWeight: 800, fontSize: 15, color: INK }}>{t}</div>
+                <div style={{ fontSize: 13, color: 'var(--ink-500)', lineHeight: 1.45, marginTop: 2 }}>{d}</div>
+              </div>
+            </div>
+          </ECard>
+        ))}
+      </div>
+      <div style={{ flex: 1, minHeight: 12 }} />
+      <EButton onClick={onNext}>Got it</EButton>
+    </>
+  );
+}
+
+/* ---------- 12 · Notifications ---------- */
 function Notifications({ kid, onPick }: { kid: string; onPick: (allow: boolean) => void }) {
   const allow = async () => {
     try {
@@ -356,9 +472,9 @@ function Notifications({ kid, onPick }: { kid: string; onPick: (allow: boolean) 
   return (
     <>
       <Eyebrow>Stay in the loop</Eyebrow>
-      <div style={{ display: 'flex', justifyContent: 'center', margin: '20px 0 18px' }}>
-        <span style={{ width: 106, height: 106, borderRadius: '50%', background: 'radial-gradient(circle at 50% 35%, #F3EFFC, var(--grape-100))', border: `2.5px solid ${INK}`, boxShadow: '4px 5px 0 var(--grape-300)', display: 'grid', placeItems: 'center', transform: 'rotate(-2deg)' }}>
-          <Icon name="bell-ring" size={44} color="var(--grape-600)" />
+      <div style={{ display: 'flex', justifyContent: 'center', margin: '16px 0 16px' }}>
+        <span style={{ width: 100, height: 100, borderRadius: '50%', background: 'radial-gradient(circle at 50% 35%, #F3EFFC, var(--grape-100))', border: `2.5px solid ${INK}`, boxShadow: '4px 5px 0 var(--grape-300)', display: 'grid', placeItems: 'center', transform: 'rotate(-2deg)' }}>
+          <Icon name="bell-ring" size={42} color="var(--grape-600)" />
         </span>
       </div>
       <H1 text="Helpful nudges, never noise" grape="never noise" />
@@ -384,109 +500,7 @@ function Notifications({ kid, onPick }: { kid: string; onPick: (allow: boolean) 
   );
 }
 
-/* ---------- 07–09 · Quiz ---------- */
-function Quiz({ qi, kid, selected, onPick }: { qi: number; kid: string; selected: number; onPick: (qi: number, oi: number) => void }) {
-  const q = QUIZ[qi];
-  return (
-    <>
-      <Eyebrow>Parenting quiz · {qi + 1} of 3</Eyebrow>
-      <H1 text={q.q.replace('{name}', kid)} />
-      <Sub>No wrong answers — this just tunes the story.</Sub>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 6 }}>
-        {q.options.map((o, i) => {
-          const on = i === selected;
-          return (
-            <button
-              key={o}
-              onClick={() => onPick(qi, i)}
-              style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 12, padding: '14px 15px', borderRadius: 18, border: `2.5px solid ${INK}`, background: on ? 'var(--grape-100)' : '#fff', boxShadow: on ? '4px 5px 0 var(--grape-400)' : '2px 3px 0 var(--grape-300)', transform: `rotate(${i % 2 ? 0.4 : -0.4}deg)`, cursor: 'pointer', textAlign: 'left' }}
-            >
-              <span style={{ width: 26, height: 26, borderRadius: '50%', border: `2px solid ${INK}`, background: on ? GRAPE : '#fff', color: on ? '#fff' : INK, fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 13, display: 'grid', placeItems: 'center', flex: 'none' }}>
-                {String.fromCharCode(65 + i)}
-              </span>
-              <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 14.5, color: INK }}>{o}</span>
-              {on && (
-                <span style={{ position: 'absolute', top: -11, right: 10, background: GRAPE, color: '#fff', fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 10.5, padding: '2px 10px', borderRadius: 99, border: `2px solid ${INK}` }}>
-                  THAT’S US
-                </span>
-              )}
-            </button>
-          );
-        })}
-      </div>
-      <div style={{ flex: 1, minHeight: 10 }} />
-      <div style={{ textAlign: 'center', fontSize: 13, fontWeight: 700, color: 'var(--ink-400)' }}>Pick one to continue</div>
-    </>
-  );
-}
-
-/* ---------- 10 · Profile result ---------- */
-function Result({ power, kid, onNext }: { power: (typeof PARENT_POWERS)[number]; kid: string; onNext: () => void }) {
-  return (
-    <>
-      <Eyebrow>Quiz complete</Eyebrow>
-      <H1 text="Here’s your parenting profile" grape="parenting profile" />
-      <ECard tilt={-0.6}>
-        <div style={{ padding: '22px 20px', textAlign: 'center' }}>
-          <span style={{ display: 'inline-block', transform: 'rotate(-1.5deg)', background: GRAPE, color: '#fff', fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 11, letterSpacing: '.08em', padding: '4px 14px', borderRadius: 99, border: `2px solid ${INK}`, marginBottom: 12 }}>
-            YOUR PARENT POWER
-          </span>
-          <div style={{ width: 74, height: 74, borderRadius: '50%', background: '#FFF3D6', border: `2.5px solid ${INK}`, boxShadow: '3px 4px 0 var(--grape-300)', display: 'grid', placeItems: 'center', margin: '0 auto 10px' }}>
-            <Icon name="award" size={34} color={INK} />
-          </div>
-          <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 24, color: INK }}>{power.type}</div>
-          <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginTop: 12, flexWrap: 'wrap' }}>
-            {power.traits.map((t) => (
-              <span key={t} style={{ padding: '6px 13px', borderRadius: 99, border: `2.5px solid ${INK}`, background: '#fff', fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 12.5, color: INK }}>{t}</span>
-            ))}
-          </div>
-          <p style={{ fontSize: 13.5, color: 'var(--ink-500)', lineHeight: 1.5, margin: '12px 0 0' }}>{power.blurb.replace('{name}', kid)}</p>
-        </div>
-      </ECard>
-      <div style={{ textAlign: 'center', fontSize: 12.5, fontWeight: 700, color: 'var(--ink-400)', marginTop: 12 }}>You can retake this anytime in Progress.</div>
-      <div style={{ flex: 1, minHeight: 10 }} />
-      <EButton onClick={onNext}>Meet Sprout</EButton>
-    </>
-  );
-}
-
-/* ---------- 11 · Meet Sprout ---------- */
-function MeetSprout({ kid, onNext }: { kid: string; onNext: () => void }) {
-  const pts: [string, string][] = [
-    ['lock', 'Kid Zone lives behind your parent PIN'],
-    ['list-checks', 'Every kid conversation is fully scripted — no open chat, ever'],
-  ];
-  return (
-    <>
-      <Eyebrow>One more thing</Eyebrow>
-      <div style={{ display: 'flex', justifyContent: 'center', margin: '6px 0 14px' }}>
-        <div style={{ position: 'relative' }}>
-          <Mascot mood="idle" size={160} />
-          <div style={{ position: 'absolute', top: -8, right: -80, transform: 'rotate(2deg)', background: GRAPE, color: '#fff', border: `2.5px solid ${INK}`, borderRadius: 14, padding: '7px 12px', fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 13, boxShadow: '3px 4px 0 rgba(42,37,33,.85)', whiteSpace: 'nowrap' }}>
-            Hi {kid}!
-            <span style={{ position: 'absolute', left: -9, top: '55%', transform: 'translateY(-50%)', width: 0, height: 0, borderTop: '6px solid transparent', borderBottom: '6px solid transparent', borderRight: `9px solid ${INK}` }} />
-          </div>
-        </div>
-      </div>
-      <H1 text={`Meet Sprout — ${kid}’s practice buddy`} grape="Sprout" />
-      <Sub>Sprout stars in the games where {kid} rehearses tricky moments. You’ll hand the phone over inside Kid Zone.</Sub>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-        {pts.map(([icon, t]) => (
-          <ECard key={icon}>
-            <div style={{ display: 'flex', gap: 12, padding: '12px 14px', alignItems: 'center' }}>
-              <Icon name={icon} size={20} color="var(--grape-600)" />
-              <span style={{ fontWeight: 700, fontSize: 13.5, color: INK, lineHeight: 1.35 }}>{t}</span>
-            </div>
-          </ECard>
-        ))}
-      </div>
-      <div style={{ flex: 1, minHeight: 10 }} />
-      <EButton onClick={onNext}>Continue</EButton>
-    </>
-  );
-}
-
-/* ---------- 12 · All set ---------- */
+/* ---------- 13 · Trial / Subscription ---------- */
 function TrialStep({ onPick }: { onPick: (p: 'trial' | 'free') => void }) {
   const [selected, setSelected] = useState<'annual' | 'monthly'>('annual');
   return (
@@ -521,42 +535,6 @@ function TrialStep({ onPick }: { onPick: (p: 'trial' | 'free') => void }) {
       <p style={{ textAlign: 'center', fontSize: 11, fontWeight: 700, color: 'var(--ink-400)', margin: '10px 0 0', lineHeight: 1.5 }}>
         Cancel anytime before your trial ends. Renews automatically unless canceled.
       </p>
-    </>
-  );
-}
-
-function AllSet({ kid, age, power, onDone }: { kid: string; age: string; power: string; onDone: () => void }) {
-  const items: [string, string, boolean][] = [
-    ['Account created', 'check', false],
-    [`${kid} added (ages ${age})`, 'check', false],
-    [`Profile: ${power.replace(/^The /, '')}`, 'check', false],
-    ['First mission ready', 'sparkles', true],
-  ];
-  return (
-    <>
-      <Eyebrow>All set</Eyebrow>
-      <div style={{ display: 'flex', justifyContent: 'center', margin: '10px 0 6px' }}>
-        <span style={{ transform: 'rotate(-2deg)', background: GRAPE, color: '#fff', border: `2.5px solid ${INK}`, borderRadius: 99, boxShadow: '3px 4px 0 rgba(42,37,33,.9)', fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 13, letterSpacing: '.08em', padding: '6px 16px' }}>
-          SETUP COMPLETE ✦
-        </span>
-      </div>
-      <H1 text="You’re all set!" grape="all set!" />
-      <Sub>Here’s what we set up. Your first weekly mission is waiting on Today.</Sub>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
-        {items.map(([label, icon, last], i) => (
-          <ECard key={label} tilt={i % 2 ? 0.4 : -0.4}>
-            <div style={{ display: 'flex', gap: 12, padding: '12px 14px', alignItems: 'center' }}>
-              <span style={{ width: 28, height: 28, borderRadius: '50%', background: last ? 'var(--sun-300)' : 'var(--green-100)', border: `2.5px solid ${INK}`, display: 'grid', placeItems: 'center', flex: 'none' }}>
-                <Icon name={icon} size={15} color={INK} />
-              </span>
-              <span style={{ fontWeight: 800, fontSize: 14.5, color: INK }}>{label}</span>
-            </div>
-          </ECard>
-        ))}
-      </div>
-      <div style={{ flex: 1, minHeight: 10 }} />
-      <EButton onClick={onDone}>Go to Today</EButton>
-      <div style={{ textAlign: 'center', marginTop: 12, fontSize: 13, fontWeight: 800, color: GRAPE }}>+10 stars for finishing setup ✦</div>
     </>
   );
 }
