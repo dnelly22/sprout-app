@@ -4,7 +4,7 @@ import { useApp } from '../../store/AppStore';
 import { Icon } from '../../components/ds';
 import { Mascot } from '../kidzone/Mascot';
 import { QUIZ, PARENT_POWERS, GOAL_BY_FOCUS } from '../../data/quiz';
-import { emptyAreaScores, type AreaKey } from '../../constants/areas';
+import { AREAS, emptyAreaScores, type AreaKey } from '../../constants/areas';
 import type { Child, Goal } from '../../types';
 
 /*
@@ -184,6 +184,14 @@ export function Onboarding() {
     dispatch({ type: 'completeOnboarding', parent: { email, consentGiven: true, type: power.type }, child, goal });
     dispatch({ type: 'updateSettings', patch: { notifications: allowNotifs } });
     dispatch({ type: 'awardStars', childId: child.id, stars: 10 }); // +10 stars for finishing setup
+    // Funnel pass-through: if the parent came through /start, point Kid Zone at
+    // the world their answers recommended (skips re-quizzing).
+    try {
+      const intake = JSON.parse(localStorage.getItem('sprout_intake') || 'null');
+      const world = intake?.kidWorld as string | undefined;
+      const area = world && AREAS.find((a) => a.kidWorld === world)?.key;
+      if (area) dispatch({ type: 'recommendArea', childId: child.id, area });
+    } catch { /* ignore */ }
     navigate('/today', { replace: true });
   };
 

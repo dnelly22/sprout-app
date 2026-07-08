@@ -13,10 +13,16 @@ import { Paywall } from './screens/Paywall';
 // Lazy: the whole Kid Zone screen (and, behind it, the heavy Journey scenario
 // data) becomes its own chunk so the parent-facing initial bundle stays lean.
 const KidZone = lazy(() => import('./screens/kidzone/KidZone').then((m) => ({ default: m.KidZone })));
+// The acquisition funnel (/start) is its own chunk — the Meta-ads landing page,
+// loaded before (and separate from) the app so it stays fast on cold traffic.
+const Funnel = lazy(() => import('./funnel/Funnel').then((m) => ({ default: m.Funnel })));
 
 export default function App() {
   return (
     <Routes>
+      {/* Landing funnel — top-level, OUTSIDE the app frame so it skips the
+          onboarding gate and bottom nav. This is the ad's destination URL. */}
+      <Route path="start" element={<Suspense fallback={<div style={{ minHeight: '100dvh', background: '#F6F1FF' }} />}><Funnel /></Suspense>} />
       <Route element={<AppFrame />}>
         <Route index element={<Navigate to="/today" replace />} />
         <Route path="onboarding" element={<Onboarding />} />
