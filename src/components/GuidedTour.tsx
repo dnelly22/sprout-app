@@ -12,11 +12,12 @@ import { Mascot } from '../screens/kidzone/Mascot';
  * play. Runs once (settings.tourDone), skippable after the mandatory Kid Zone step.
  */
 
-interface Step { id: string; route?: string; title: string; body: string; mandatory?: boolean }
+interface Step { id: string; route?: string; title: string; body: string; mandatory?: boolean; top?: boolean }
 const STEPS: Step[] = [
-  { id: 'intro', title: 'You’re all set! 🎉', body: 'Take the 30-second tour — I’ll show you the good stuff first.' },
-  { id: 'kid', route: '/kid', mandatory: true, title: '{kid}’s Zone', body: 'This is where {kid} plays. Tap a game — try a Journey to see how they rehearse a real moment.' },
-  { id: 'progress', route: '/progress', title: 'Watch {kid} grow', body: 'Levels, badges and streaks build up here — plus your own learning, in one place.' },
+  // Starts right inside a real, playing Journey game — value first, and mandatory.
+  { id: 'kid-journey', route: '/kid', mandatory: true, top: true, title: 'This is a Journey', body: 'Watch — {kid} rehearses a real moment. Tap an answer to try it, then hit Next.' },
+  { id: 'kid-games', route: '/kid', title: 'Three ways to practice', body: 'Journey tells a story. Quick Fire trains fast thinking. Say It Out Loud practices the real words.' },
+  { id: 'progress', route: '/progress', title: '{kid}’s profile & yours', body: 'Watch {kid} grow — levels, badges, streaks — plus your own learning.' },
   { id: 'library', route: '/lessons', title: 'Your script library', body: 'Exactly what to say — for {kid}, and with {kid}. This part’s for you.' },
 ];
 
@@ -64,20 +65,22 @@ export function TourProvider({ children }: { children: ReactNode }) {
       {active && step && (
         <TourBar
           title={fill(step.title)} body={fill(step.body)} index={i} total={STEPS.length}
-          mandatory={!!step.mandatory} onNext={next} onSkip={finish}
+          mandatory={!!step.mandatory} top={!!step.top} onNext={next} onSkip={finish}
         />
       )}
     </Ctx.Provider>
   );
 }
 
-function TourBar({ title, body, index, total, mandatory, onNext, onSkip }: {
-  title: string; body: string; index: number; total: number; mandatory: boolean; onNext: () => void; onSkip: () => void;
+function TourBar({ title, body, index, total, mandatory, top, onNext, onSkip }: {
+  title: string; body: string; index: number; total: number; mandatory: boolean; top?: boolean; onNext: () => void; onSkip: () => void;
 }) {
-  const isIntro = index === 0;
   const isLast = index === total - 1;
+  const pos: React.CSSProperties = top
+    ? { top: 0, padding: 'calc(env(safe-area-inset-top, 0px) + 10px) 12px 0' }
+    : { bottom: 0, padding: '0 12px calc(12px + env(safe-area-inset-bottom))' };
   return (
-    <div style={{ position: 'fixed', left: 0, right: 0, bottom: 0, zIndex: 250, padding: '0 12px calc(12px + env(safe-area-inset-bottom))', pointerEvents: 'none' }}>
+    <div style={{ position: 'fixed', left: 0, right: 0, zIndex: 250, pointerEvents: 'none', ...pos }}>
       <div className="fade-up" style={{ maxWidth: 460, margin: '0 auto', pointerEvents: 'auto', background: '#fff', border: `2.5px solid ${INK}`, borderRadius: 20, boxShadow: '4px 5px 0 rgba(42,37,33,.85)', padding: '12px 14px', display: 'flex', gap: 12, alignItems: 'center' }}>
         <span style={{ width: 44, height: 44, borderRadius: '50%', background: 'radial-gradient(circle at 50% 35%, #EAF6E2, #BFE3CB)', border: `2px solid ${INK}`, overflow: 'hidden', flex: 'none', display: 'grid', placeItems: 'center' }}>
           <Mascot mood="idle" size={40} />
@@ -93,11 +96,11 @@ function TourBar({ title, body, index, total, mandatory, onNext, onSkip }: {
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6, flex: 'none', alignItems: 'stretch' }}>
           <button onClick={onNext} style={{ border: `2.5px solid ${INK}`, borderRadius: 99, background: 'var(--grape-500)', color: '#fff', fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 13, padding: '9px 15px', boxShadow: '2px 3px 0 rgba(42,37,33,.7)', cursor: 'pointer', whiteSpace: 'nowrap' }}>
-            {isIntro ? 'Start tour' : isLast ? 'Jump in' : 'Next'}
+            {isLast ? 'Jump in' : 'Next'}
           </button>
           {!mandatory && (
             <button onClick={onSkip} style={{ border: 'none', background: 'none', fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 11.5, color: 'var(--ink-400)', cursor: 'pointer' }}>
-              {isIntro ? 'Maybe later' : 'Skip tour'}
+              Skip tour
             </button>
           )}
         </div>

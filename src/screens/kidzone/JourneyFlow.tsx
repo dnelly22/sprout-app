@@ -8,15 +8,18 @@ import type { Child } from '../../types';
 import type { JourneyArea, JourneyMode, JourneyScenario } from '../../types/journey';
 
 /** Friends world → scenario list → difficulty picker → the Journey game. */
-export function JourneyFlow({ child, category, worldName, color, onExit, freeScenarioId, onLocked }: {
+export function JourneyFlow({ child, category, worldName, color, onExit, freeScenarioId, onLocked, autoOpenId }: {
   child: Child; category: JourneyArea; worldName: string; color: string; onExit: () => void;
   /** When set (free plan), only this scenario id is playable; others show a premium lock. */
   freeScenarioId?: string | null;
   onLocked?: () => void;
+  /** Guided tour: jump straight into this scenario's game (Easy) so it plays on open. */
+  autoOpenId?: string | null;
 }) {
   const scenarios = journeyByCategory(category);
-  const [scenario, setScenario] = useState<JourneyScenario | null>(null);
-  const [mode, setMode] = useState<JourneyMode | null>(null);
+  const auto = autoOpenId ? (scenarios.find((s) => s.id === autoOpenId) ?? null) : null;
+  const [scenario, setScenario] = useState<JourneyScenario | null>(auto);
+  const [mode, setMode] = useState<JourneyMode | null>(auto ? 'easy' : null);
 
   if (scenario && mode) {
     return <JourneyGame child={child} scenario={scenario} mode={mode} onExit={() => { setMode(null); setScenario(null); }} />;

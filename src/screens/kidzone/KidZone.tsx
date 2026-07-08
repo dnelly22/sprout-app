@@ -32,8 +32,9 @@ export function KidZone() {
   const child = activeChild;
 
   // During the guided tour the parent is watching — skip the "hand phone over" gate.
-  const [entered, setEntered] = useState(tour.active && tour.stepId === 'kid');
-  useEffect(() => { if (tour.active && tour.stepId === 'kid') setEntered(true); }, [tour.active, tour.stepId]);
+  const inKidTour = tour.active && (tour.stepId === 'kid-journey' || tour.stepId === 'kid-games');
+  const [entered, setEntered] = useState(inKidTour);
+  useEffect(() => { if (inKidTour) setEntered(true); }, [inKidTour]);
   const [view, setView] = useState<'quest' | 'me'>('quest');
   const [game, setGame] = useState<GameKind | null>(null);
   const [boss, setBoss] = useState(false);
@@ -52,6 +53,13 @@ export function KidZone() {
   };
 
   useEffect(() => { if (game || boss) sfx('enter'); }, [game, boss]);
+
+  // Tour drives the Journey demo: step 'kid-journey' auto-opens the Friends world
+  // (the free scenario auto-launches into its game); later steps show the quest.
+  useEffect(() => {
+    if (!tour.active) return;
+    setJourneyArea(tour.stepId === 'kid-journey' ? 'connect' : null);
+  }, [tour.active, tour.stepId]);
 
   const exitToParent = () => navigate('/today');
 
@@ -89,6 +97,7 @@ export function KidZone() {
             worldName={areaKidWorld(journeyArea)}
             color={areaColor(journeyArea)}
             freeScenarioId={plan.isPremium ? null : FREE_SCENARIO_ID}
+            autoOpenId={tour.active && tour.stepId === 'kid-journey' ? FREE_SCENARIO_ID : null}
             onLocked={() => setParentGate(true)}
             onExit={() => setJourneyArea(null)}
           />
