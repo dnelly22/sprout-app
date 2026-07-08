@@ -4,6 +4,7 @@ import { useApp } from '../store/AppStore';
 import { Icon, Input } from '../components/ds';
 import { popBg, PopCard, PopButton, INK, GRAPE } from '../components/pop';
 import { usePlan, PRICE } from '../engine/plan';
+import { track, trackOnce } from '../analytics';
 
 /* Point these at real Stripe Payment Links before charging anyone. */
 const STRIPE_MONTHLY = '';
@@ -27,10 +28,12 @@ export function Paywall() {
   const startTrial = () => {
     if (plan.tier === 'free' && !plan.trialExpired) {
       dispatch({ type: 'updateSettings', patch: { plan: 'trial', trialStart: Date.now() } });
+      trackOnce('start_trial', 'StartTrial', { plan: selected, value: selected === 'annual' ? 99 : 14.99, currency: 'USD', predicted_ltv: 99 });
       navigate(-1);
       return;
     }
     // trial used up → real checkout (Stripe links when configured)
+    track('InitiateCheckout', { plan: selected, value: selected === 'annual' ? 99 : 14.99, currency: 'USD' });
     const url = selected === 'annual' ? STRIPE_ANNUAL : STRIPE_MONTHLY;
     if (url) window.open(url, '_blank');
     else codeRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -43,6 +46,8 @@ export function Paywall() {
       setCodeMsg('admin');
     } else if (c === UNLOCK_CODE) {
       dispatch({ type: 'updateSettings', patch: { plan: 'premium' } });
+      // A redeemed unlock code = a real activation (not an admin/dev unlock).
+      trackOnce('subscribe', 'Subscribe', { via: 'unlock_code', currency: 'USD', value: 0 });
       setCodeMsg('ok');
     } else setCodeMsg('bad');
   };

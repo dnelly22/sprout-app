@@ -5,6 +5,7 @@ import { Icon } from '../../components/ds';
 import { Mascot } from '../kidzone/Mascot';
 import { QUIZ, PARENT_POWERS, GOAL_BY_FOCUS } from '../../data/quiz';
 import { AREAS, emptyAreaScores, type AreaKey } from '../../constants/areas';
+import { trackOnce } from '../../analytics';
 import type { Child, Goal } from '../../types';
 
 /*
@@ -218,7 +219,7 @@ export function Onboarding() {
         {screen === 'signup' && <SignUp email={email} setEmail={setEmail} pw={pw} setPw={setPw} kid={kid} onNext={next} />}
         {screen === 'consent' && <Consent agree={agree} setAgree={setAgree} onNext={next} />}
         {screen === 'child' && <AddChild draft={draft} setDraft={setDraft} onNext={next} />}
-        {screen === 'trial' && <TrialStep onPick={(p) => { dispatch({ type: 'updateSettings', patch: p === 'trial' ? { plan: 'trial', trialStart: Date.now() } : { plan: 'free' } }); next(); }} />}
+        {screen === 'trial' && <TrialStep onPick={(p) => { if (p === 'trial') trackOnce('start_trial', 'StartTrial', { via: 'onboarding', currency: 'USD', predicted_ltv: 99 }); dispatch({ type: 'updateSettings', patch: p === 'trial' ? { plan: 'trial', trialStart: Date.now() } : { plan: 'free' } }); next(); }} />}
         {screen === 'notif' && <Notifications kid={kid} onPick={(allow) => { setAllowNotifs(allow); next(); }} />}
         {(screen === 'quiz1' || screen === 'quiz2' || screen === 'quiz3') && (
           <Quiz

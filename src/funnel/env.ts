@@ -23,13 +23,8 @@ export function resolveEnv(detected: Env): Exclude<Env, 'other'> {
   return detected === 'other' ? 'android' : detected;
 }
 
-/** Meta Pixel passthrough (fires window.fbq if a real pixel is installed). */
-export function track(ev: string, data?: Record<string, unknown>) {
-  const fbq = (window as unknown as { fbq?: (...a: unknown[]) => void }).fbq;
-  if (fbq) { try { fbq('track', ev, data || {}); } catch { /* ignore */ } }
-  // eslint-disable-next-line no-console
-  console.log('%c[pixel] ' + ev, 'color:#7A5AD9;font-weight:bold', data || '');
-}
+// Funnel events route through the shared analytics entry point (src/analytics.ts).
+export { track, trackCustom, trackOnce } from '../analytics';
 
 /* ---- answer → plan mapping (drives the Recommendation beat + app pass-through) ---- */
 export const KID_MAP: Record<string, string> = {

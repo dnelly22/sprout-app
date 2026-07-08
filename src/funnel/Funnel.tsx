@@ -5,7 +5,7 @@ import {
   Recommendation, Offer, Progress, InstallSheet, type Opt, type Creative,
 } from './ui';
 import {
-  detectEnv, resolveEnv, track, KID_MAP, KID_DESC, PARENT_MAP, STATE_KEY, INTAKE_KEY, type Env,
+  detectEnv, resolveEnv, track, trackCustom, trackOnce, KID_MAP, KID_DESC, PARENT_MAP, STATE_KEY, INTAKE_KEY, type Env,
 } from './env';
 
 /* ---- ad creatives (set per ad via ?angle=freeze|meltdown|hangback) ---- */
@@ -106,8 +106,9 @@ export function Funnel() {
   }, [beat]);
 
   useEffect(() => { track('ViewContent', { content_name: 'funnel_v2_hook', angle }); }, [angle]);
-  useEffect(() => { if (beat === 10) track('Lead', { kidWorld, parentTrack }); }, [beat, kidWorld, parentTrack]);
-  useEffect(() => { if (detected === 'installed') track('CompleteRegistration', { via: 'standalone' }); }, [detected]);
+  useEffect(() => { if (beat === 10) track('Lead', { content_name: 'funnel_complete', kidWorld, parentTrack }); }, [beat, kidWorld, parentTrack]);
+  // Opened from the home screen → an install happened (fire once, best real signal).
+  useEffect(() => { if (detected === 'installed') trackOnce('a2hs', 'AddToHomeScreen', { via: 'standalone' }, true); }, [detected]);
 
   useEffect(() => {
     const h = (e: Event) => { e.preventDefault(); deferredPrompt.current = e as unknown as { prompt?: () => void }; };
@@ -123,19 +124,19 @@ export function Funnel() {
   const pickSingle = (setter: (v: string) => void, next: number) => (val: string) => { setter(val); setTimeout(() => setBeat(next), 360); };
 
   function handleInstall() {
-    track('InitiateCheckout', { content_name: 'install', env: effEnv });
-    if (detected === 'installed') { setInstalled(true); setSheet(true); track('CompleteRegistration', { via: 'already_installed' }); return; }
+    trackCustom('InstallIntent', { env: effEnv }); // tapped "Add to home screen"
+    if (detected === 'installed') { setInstalled(true); setSheet(true); trackOnce('a2hs', 'AddToHomeScreen', { via: 'already_installed' }, true); return; }
     setSheet(true);
   }
   function androidInstall() {
     const dp = deferredPrompt.current;
     if (dp && dp.prompt) { try { dp.prompt(); } catch { /* ignore */ } }
     setInstalled(true);
-    track('CompleteRegistration', { via: 'android_prompt' });
+    trackOnce('a2hs', 'AddToHomeScreen', { via: 'android_prompt' }, true);
   }
   // "Just open it in my browser for now" → go straight into the app.
   function fallbackOpen() {
-    track('CompleteRegistration', { via: 'browser_fallback' });
+    trackCustom('OpenInBrowser');
     navigate('/');
   }
 

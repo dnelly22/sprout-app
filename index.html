@@ -8,6 +8,26 @@
     <meta name="theme-color" content="#7A5AD9" />
     <meta name="description" content="Sprout — know what to say, watch them grow. A parenting + kid confidence companion." />
     <title>Sprout — Confidence for Kids</title>
+
+    <!-- ============================================================
+         META PIXEL — paste your Pixel ID between the quotes below,
+         then rebuild/redeploy. Leave empty to disable (safe no-op).
+         Find your ID at facebook.com/events_manager → Data Sources.
+         ============================================================ -->
+    <script>
+      window.SPROUT_PIXEL_ID = ""; /* e.g. "1234567890123456" */
+      (function () {
+        var id = window.SPROUT_PIXEL_ID;
+        if (!/^\d{6,20}$/.test(id)) return; /* not configured -> do nothing */
+        !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+          n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;
+          n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;
+          t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,
+          document,'script','https://connect.facebook.net/en_US/fbevents.js');
+        fbq('init', id);
+        fbq('track', 'PageView');
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>
