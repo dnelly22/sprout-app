@@ -129,8 +129,8 @@ export function Coach() {
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100dvh' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '20px 20px 12px', borderBottom: '2.5px solid #2A2521', background: '#fff' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: 'calc(env(safe-area-inset-top, 0px) + 16px) 20px 12px', borderBottom: '2.5px solid #2A2521', background: '#fff', flex: 'none' }}>
         <span style={{ width: 42, height: 42, borderRadius: '50%', background: 'linear-gradient(180deg, #FAC3ED, #2A8FD8)', border: '2.5px solid #2A2521', display: 'grid', placeItems: 'center', flex: 'none' }}><Icon name="sparkles" size={22} color="#fff" /></span>
         <div style={{ flex: 1 }}>
           <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 'var(--text-lg)', color: 'var(--text-strong)' }}>Ask Sprout</div>

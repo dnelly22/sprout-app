@@ -23,6 +23,7 @@ body {
 .app-frame {
   width: 100%;
   max-width: var(--content-max);
+  height: 100dvh;        /* definite height so .app-scroll + bottom nav size exactly */
   min-height: 100dvh;
   background: var(--bg);
   position: relative;
