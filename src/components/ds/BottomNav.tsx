@@ -43,6 +43,7 @@ export function BottomNav({ active, onChange }: BottomNavProps) {
           <button
             key={tab.key}
             type="button"
+            data-tour={tab.key}
             onClick={() => onChange(tab.key)}
             aria-current={on ? 'page' : undefined}
             style={{

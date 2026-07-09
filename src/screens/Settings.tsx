@@ -151,6 +151,9 @@ export function Settings() {
         <button onClick={() => { dispatch({ type: 'replayOnboarding' }); navigate('/onboarding', { replace: true }); }} style={{ border: `2.5px solid ${INK}`, background: '#fff', color: INK, fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 14, borderRadius: 99, padding: 12, cursor: 'pointer', boxShadow: '3px 4px 0 var(--grape-300)' }}>
           Replay onboarding
         </button>
+        <button onClick={() => { dispatch({ type: 'updateSettings', patch: { tourDone: false } }); navigate('/today'); }} style={{ border: `2.5px solid ${INK}`, background: '#fff', color: INK, fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 14, borderRadius: 99, padding: 12, cursor: 'pointer', boxShadow: '3px 4px 0 var(--grape-300)' }}>
+          Replay tutorial
+        </button>
         <button style={{ border: 'none', background: 'none', color: 'var(--coral-600)', fontFamily: 'var(--font-display)', fontWeight: 800, padding: '4px 0', cursor: 'pointer' }}>Sign out</button>
       </div>
 
