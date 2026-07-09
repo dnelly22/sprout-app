@@ -1,9 +1,9 @@
 import {
   Apple, ArrowLeft, ArrowRight, ArrowUp, Award, Ban, Bell, BellRing, Bookmark, BookOpen, BookmarkPlus, Brain,
   CalendarCheck, CalendarHeart, Check, ChevronDown, ChevronRight, Circle, CircleHelp, Clock, Compass, Crown,
-  Delete, Eye, EyeOff, Flame, Footprints, Gamepad2, Globe, Hand, Heart, House, Info, Leaf, LifeBuoy, Lightbulb,
+  Delete, Eye, EyeOff, FileLock, Flame, Footprints, Gamepad2, Globe, Hand, Heart, House, Info, Leaf, LifeBuoy, Lightbulb,
   Link, ListChecks, Lock, Mail, Map, Megaphone, MessageCircle, MessagesSquare, Mic, Music, Play, Quote,
-  RotateCcw, Search, SearchX, Settings, Shield, ShieldCheck, Smile, Sparkles, Sprout, Star, Target, Trash2,
+  RotateCcw, Search, SearchX, Settings, Shield, ShieldCheck, SlidersHorizontal, Smile, Sparkles, Sprout, Star, Target, Trash2,
   TrendingUp, Trophy, User, UserCog, Users, Volume2, VolumeX, Wrench, X, Zap,
   type LucideProps,
 } from 'lucide-react';
@@ -19,7 +19,7 @@ const REGISTRY: Record<string, React.ComponentType<LucideProps>> = {
   check: Check, 'chevron-down': ChevronDown, 'chevron-right': ChevronRight, 'circle-help': CircleHelp, clock: Clock, link: Link,
   compass: Compass, crown: Crown, delete: Delete, eye: Eye, 'eye-off': EyeOff, flame: Flame,
   footprints: Footprints, 'gamepad-2': Gamepad2, globe: Globe, hand: Hand, heart: Heart, house: House,
-  info: Info, leaf: Leaf, 'life-buoy': LifeBuoy, lightbulb: Lightbulb, lock: Lock, mail: Mail, map: Map,
+  info: Info, leaf: Leaf, 'file-lock': FileLock, 'sliders-horizontal': SlidersHorizontal, 'life-buoy': LifeBuoy, lightbulb: Lightbulb, lock: Lock, mail: Mail, map: Map,
   megaphone: Megaphone, 'message-circle': MessageCircle, mic: Mic, play: Play, quote: Quote,
   'rotate-ccw': RotateCcw, search: Search, 'search-x': SearchX, settings: Settings, shield: Shield,
   'shield-check': ShieldCheck, smile: Smile, sparkles: Sparkles, sprout: Sprout, star: Star,

@@ -112,6 +112,7 @@ type Action =
   | { type: 'completeOnboarding'; parent: Partial<ParentProfile>; child: Child; goal: Goal }
   | { type: 'replayOnboarding' }
   | { type: 'addChild'; child: Child }
+  | { type: 'deleteChild'; id: string }
   | { type: 'awardStars'; childId: string; stars: number; area?: AreaKey }
   | { type: 'recordActivity'; input: RecordActivityInput }
   | { type: 'rwcSet'; childId: string; status: RwcStatus }
@@ -261,7 +262,14 @@ function reducer(state: AppState, action: Action): AppState {
       return { ...state, onboarded: false };
 
     case 'addChild':
-      return { ...state, children: [...state.children, action.child] };
+      return { ...state, children: [...state.children, action.child], activeChildId: action.child.id };
+
+    case 'deleteChild': {
+      if (state.children.length <= 1) return state; // always keep at least one child
+      const children = state.children.filter((c) => c.id !== action.id);
+      const activeChildId = state.activeChildId === action.id ? children[0].id : state.activeChildId;
+      return { ...state, children, activeChildId };
+    }
 
     case 'awardStars':
       return mapChild(state, action.childId, (c) =>

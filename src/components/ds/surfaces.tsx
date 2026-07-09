@@ -182,7 +182,7 @@ export function Sheet({ open, onClose, title, children }: SheetProps) {
     <div
       onClick={onClose}
       style={{
-        position: 'absolute', inset: 0, zIndex: 50, background: 'var(--scrim)',
+        position: 'fixed', inset: 0, zIndex: 120, background: 'var(--scrim)',
         display: 'flex', alignItems: 'flex-end', animation: 'fadeUp var(--dur-base) var(--ease-out)',
       }}
     >
