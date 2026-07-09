@@ -134,7 +134,7 @@ export function KidZone() {
             </span>
           </div>
           <div style={{ display: 'flex', border: `2.5px solid ${INK}`, borderRadius: 99, background: '#fff', padding: 3, marginTop: 14, boxShadow: '0 4px 12px rgba(0,0,0,.15)' }}>
-            {([['quest', 'Quest'], ['me', 'My Growth']] as const).map(([k, label]) => {
+            {([['quest', 'Play'], ['me', 'My Growth']] as const).map(([k, label]) => {
               const on = view === k;
               return (
                 <button

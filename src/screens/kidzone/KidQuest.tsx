@@ -1,10 +1,8 @@
-import { useState } from 'react';
 import { useApp } from '../../store/AppStore';
 import { useChildEconomy } from '../../engine/selectors';
-import { Icon, Sheet } from '../../components/ds';
-import { INK, InkChip, InkBar, ArrowCoin, SectionHead } from '../../components/pop';
-import { REWARD, BOSS } from '../../engine/economy';
-import { AREAS } from '../../constants/areas';
+import { Icon } from '../../components/ds';
+import { INK, SectionHead } from '../../components/pop';
+import { REWARD, BOSS, LEVELS } from '../../engine/economy';
 import { Mascot } from './Mascot';
 import { sfx } from '../../audio/sfx';
 import type { Child } from '../../types';
@@ -12,9 +10,9 @@ import type { AreaKey } from '../../constants/areas';
 import type { GameKind } from './KidZone';
 
 /**
- * Kid Zone · QUEST — "What do I do today?"
- * Hero → Today's Quest → Continue Playing → Pick a game → Weekly Adventure →
- * Boss Challenge (the only locked thing) → Real World Challenge.
+ * Kid Zone · PLAY (design: "Play grid") — games big & first.
+ * Slim level bar → Journey story hero + Quick Fire / Say It tiles → today's quest
+ * → your worlds list → Boss Challenge → Real World Challenge.
  */
 export function KidQuest({ child, onPlay, onOpenJourney, onBoss }: {
   child: Child;
@@ -24,9 +22,12 @@ export function KidQuest({ child, onPlay, onOpenJourney, onBoss }: {
 }) {
   const { dispatch } = useApp();
   const eco = useChildEconomy(child.id);
-  const [worldsOpen, setWorldsOpen] = useState(false);
-  const journeyLabel = AREAS.find((a) => a.key === eco.currentJourney);
-  const curJourney = eco.journeys.find((j) => j.area === eco.currentJourney);
+
+  // level progress (stars within the current level band)
+  const lvl = eco.level;
+  const bandStart = LEVELS.find((l) => l.level === lvl.level)?.stars ?? 0;
+  const bandEnd = lvl.next?.stars ?? bandStart + 1;
+  const levelPct = Math.max(0, Math.min(100, Math.round(((child.stars - bandStart) / (bandEnd - bandStart)) * 100)));
 
   const startQuest = () => {
     sfx('pop');
@@ -40,126 +41,101 @@ export function KidQuest({ child, onPlay, onOpenJourney, onBoss }: {
 
   return (
     <div style={{ padding: '0 0 26px' }}>
-      {/* hero */}
-      <div style={{ padding: '16px 20px 0' }}>
-        <div style={{ background: '#fff', border: `2.5px solid ${INK}`, borderRadius: 20, boxShadow: '4px 5px 0 var(--grape-300)', padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 14 }}>
-          <div style={{ position: 'relative', flex: 'none' }}>
-            <span style={{ display: 'grid', placeItems: 'center', width: 88, height: 88, borderRadius: '50%', background: 'radial-gradient(circle at 50% 35%, #EAF6E2, #BFE3CB)', border: `2.5px solid ${INK}`, overflow: 'hidden' }}>
-              <Mascot mood="idle" size={78} />
-            </span>
-            <span style={{ position: 'absolute', bottom: -6, left: '50%', transform: 'translateX(-50%)', background: 'var(--grape-500)', color: '#fff', border: `2px solid ${INK}`, borderRadius: 99, fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 10, padding: '1px 9px', whiteSpace: 'nowrap' }}>Lv {eco.level.level}</span>
-          </div>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 20, color: INK, lineHeight: 1.1 }}>Hi {child.name}!</div>
-            <div style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--ink-500)', marginTop: 2 }}>{eco.level.title} · ready for today’s quest?</div>
-            <div style={{ display: 'flex', gap: 7, marginTop: 9, flexWrap: 'wrap' }}>
-              <InkChip icon="star" iconColor="var(--sun-500)" bg="var(--sun-100)">{child.stars}</InkChip>
-              <InkChip icon="flame" iconColor="var(--coral-600)" bg="#FBE3D8">{eco.streak.current} days</InkChip>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* today's quest */}
-      <div style={{ padding: '18px 20px 0' }}>
-        <div style={{ background: 'var(--sun-100)', border: `2.5px solid ${INK}`, borderRadius: 20, boxShadow: '4px 5px 0 rgba(42,37,33,.85)', padding: '15px 16px' }}>
-          <span style={{ display: 'inline-flex', transform: 'rotate(-1.2deg)', alignItems: 'center', gap: 6, background: '#fff', border: `2px solid ${INK}`, color: 'var(--green-600)', fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 11, letterSpacing: '.07em', padding: '3px 11px', borderRadius: 99, boxShadow: '2px 3px 0 rgba(42,37,33,.5)' }}>
-            <Icon name="sprout" size={13} color="var(--green-600)" />TODAY’S QUEST
-          </span>
-          <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 20, color: INK, lineHeight: 1.15, marginTop: 10 }}>{eco.quest.def.title}</div>
-          <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--ink-500)', marginTop: 2 }}>{eco.quest.def.sub}</div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 11 }}>
-            <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 11, color: 'var(--ink-500)' }}>REWARD</span>
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: '#fff', border: `2px solid ${INK}`, borderRadius: 99, padding: '2px 10px', fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 11.5, color: 'var(--sun-600)' }}>
-              <Icon name="star" size={12} color="var(--sun-500)" fill="var(--sun-500)" />+{REWARD.dailyQuestBonus}
-            </span>
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: '#fff', border: `2px solid ${INK}`, borderRadius: 99, padding: '2px 10px', fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 11.5, color: 'var(--green-600)' }}>
-              <Icon name="sprout" size={12} color="var(--green-500)" />Growth
-            </span>
-          </div>
-          {eco.quest.done ? (
-            <div style={{ width: '100%', border: `2.5px solid ${INK}`, borderRadius: 99, background: 'var(--green-500)', color: '#fff', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 16, padding: 12, marginTop: 13, textAlign: 'center' }}>
-              ✓ Quest complete — amazing!
-            </div>
-          ) : (
-            <button onClick={startQuest} style={{ width: '100%', border: `2.5px solid ${INK}`, borderRadius: 99, background: 'var(--grape-500)', color: '#fff', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 16, padding: 12, marginTop: 13, boxShadow: '4px 5px 0 rgba(42,37,33,.9)', cursor: 'pointer' }}>
-              Start Quest!
-            </button>
-          )}
-        </div>
-      </div>
-
-      {/* continue playing */}
-      <div style={{ padding: '18px 20px 0' }}>
-        <SectionHead icon="play" tint="var(--grape-100)">
-          {eco.parentRecommended ? 'Mom & Dad recommended' : 'Continue playing'}
-        </SectionHead>
-        <div onClick={() => onOpenJourney(eco.currentJourney)} style={{ background: '#fff', border: `2.5px solid ${INK}`, borderRadius: 20, boxShadow: '4px 5px 0 var(--grape-300)', padding: '14px 15px', cursor: 'pointer' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <span style={{ width: 46, height: 46, borderRadius: 14, background: 'var(--grape-100)', border: `2.5px solid ${INK}`, display: 'grid', placeItems: 'center', flex: 'none' }}>
-              <Icon name="gamepad-2" size={22} color="var(--grape-600)" />
+      {/* slim level hero bar */}
+      <div style={{ padding: '14px 20px 0' }}>
+        <div style={{ background: 'linear-gradient(150deg, var(--grape-500), var(--grape-600))', border: `2.5px solid ${INK}`, borderRadius: 20, boxShadow: '4px 5px 0 rgba(42,37,33,.85)', padding: '12px 14px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 11 }}>
+            <span style={{ display: 'grid', placeItems: 'end center', width: 60, height: 60, borderRadius: '50%', background: 'radial-gradient(circle at 50% 35%, #EAF6E2, #BFE3CB)', border: `2.5px solid ${INK}`, overflow: 'hidden', flex: 'none', boxShadow: '0 4px 0 rgba(42,37,33,.3)' }}>
+              <Mascot mood="idle" size={54} />
             </span>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 10.5, fontWeight: 800, color: 'var(--ink-400)', letterSpacing: '.05em' }}>JOURNEY · {journeyLabel?.kidWorld.toUpperCase()}</div>
-              <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 16.5, color: INK }}>{journeyLabel?.kidWorld} World</div>
+              <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 16, color: '#fff', lineHeight: 1.1 }}>{lvl.title}</div>
+              <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 12, color: 'var(--grape-100)', marginTop: 2 }}>Level {lvl.level}</div>
             </div>
-            <ArrowCoin />
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: '#fff', border: `2px solid ${INK}`, borderRadius: 99, padding: '3px 10px', fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 12, color: INK, flex: 'none' }}>
+              <Icon name="star" size={13} color="var(--sun-500)" fill="var(--sun-500)" />{child.stars}
+            </span>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 9, marginTop: 11 }}>
-            <InkBar striped pct={((curJourney?.level ?? 0) / 5) * 100} />
-            <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 12, color: 'var(--grape-600)' }}>Lv {curJourney?.level ?? 0} / 5</span>
+          <div style={{ height: 13, border: `2.5px solid ${INK}`, borderRadius: 8, background: 'rgba(255,255,255,.3)', overflow: 'hidden' }}>
+            <div style={{ width: `${levelPct}%`, height: '100%', background: '#B5D95A' }} />
           </div>
         </div>
       </div>
 
-      {/* pick a game */}
+      {/* pick a game — big Journey hero + 2 tiles */}
       <div style={{ padding: '18px 20px 0' }}>
-        <SectionHead icon="gamepad-2" tint="#E7F2FB">Pick a game</SectionHead>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
+        <SectionHead icon="dices" tint="#E7F2FB">Pick a game</SectionHead>
+        <button onClick={() => { sfx('pop'); onOpenJourney(eco.currentJourney); }} style={{ position: 'relative', overflow: 'hidden', width: '100%', textAlign: 'left', cursor: 'pointer', background: 'linear-gradient(140deg, var(--grape-400), var(--grape-600))', border: `2.5px solid ${INK}`, borderRadius: 22, boxShadow: '5px 6px 0 rgba(42,37,33,.85)', padding: 18, color: '#fff' }}>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'rgba(255,255,255,.2)', border: '2px solid rgba(255,255,255,.5)', color: '#fff', fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 10.5, letterSpacing: '.05em', padding: '3px 10px', borderRadius: 99 }}>
+            <Icon name="gamepad-2" size={12} color="#fff" />STORY MODE
+          </span>
+          <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 24, marginTop: 10 }}>Journey</div>
+          <div style={{ fontSize: 12.5, fontWeight: 700, color: 'rgba(255,255,255,.9)', maxWidth: 190, lineHeight: 1.35 }}>Play through a real story, one choice at a time.</div>
+          <span style={{ position: 'absolute', right: 16, bottom: 16, width: 52, height: 52, borderRadius: '50%', background: '#fff', border: `2.5px solid ${INK}`, display: 'grid', placeItems: 'center', boxShadow: '2px 3px 0 rgba(42,37,33,.6)' }}>
+            <Icon name="play" size={24} color="var(--grape-600)" />
+          </span>
+        </button>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginTop: 12 }}>
           {([
-            ['Journey', 'gamepad-2', 'var(--grape-100)', 'var(--grape-600)', () => setWorldsOpen(true), -0.6],
-            ['Quick Fire', 'zap', '#E7F2FB', 'var(--sky-500)', () => onPlay('quickfire'), 0],
-            ['Say It Out Loud', 'mic', 'var(--green-100)', 'var(--green-600)', () => onPlay('sayit'), 0.6],
-          ] as const).map(([label, icon, bg, color, go, tilt]) => (
-            <button key={label} onClick={() => { sfx('pop'); go(); }} style={{ background: '#fff', border: `2.5px solid ${INK}`, borderRadius: 16, boxShadow: '3px 4px 0 var(--grape-300)', padding: '12px 8px', textAlign: 'center', transform: `rotate(${tilt}deg)`, cursor: 'pointer' }}>
-              <span style={{ display: 'inline-grid', placeItems: 'center', width: 42, height: 42, borderRadius: '50%', background: bg, border: `2px solid ${INK}` }}>
-                <Icon name={icon} size={20} color={color} />
+            ['Quick Fire', 'zap', 'var(--sky-500)', '#E7F2FB', 'Fast rounds', () => onPlay('quickfire'), -0.5],
+            ['Say It Out Loud', 'mic', 'var(--green-500)', 'var(--green-100)', 'Say it aloud', () => onPlay('sayit'), 0.5],
+          ] as const).map(([label, icon, fc, tint, desc, go, tilt]) => (
+            <button key={label} onClick={() => { sfx('pop'); go(); }} style={{ textAlign: 'left', cursor: 'pointer', background: tint, border: `2.5px solid ${INK}`, borderRadius: 18, boxShadow: '3px 4px 0 var(--grape-300)', padding: 14, transform: `rotate(${tilt}deg)` }}>
+              <span style={{ display: 'inline-grid', placeItems: 'center', width: 48, height: 48, borderRadius: 14, background: fc, border: `2.5px solid ${INK}`, boxShadow: '2px 2px 0 rgba(42,37,33,.5)' }}>
+                <Icon name={icon} size={23} color="#fff" />
               </span>
-              <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 12, color: INK, lineHeight: 1.15, marginTop: 7 }}>{label}</div>
+              <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 15, color: INK, marginTop: 9, lineHeight: 1.1 }}>{label}</div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--ink-500)', marginTop: 2 }}>{desc}</div>
             </button>
           ))}
         </div>
       </div>
 
-      {/* weekly adventure */}
+      {/* today's quest — mini row */}
       <div style={{ padding: '18px 20px 0' }}>
-        <SectionHead icon="calendar-heart" tint="var(--sun-100)">Weekly adventure</SectionHead>
-        <div style={{ background: '#fff', border: `2.5px solid ${INK}`, borderRadius: 20, boxShadow: '4px 5px 0 var(--grape-300)', padding: '13px 16px' }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {eco.weekly.rows.map((r) => (
-              <div key={r.kind} style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
-                <span style={{ width: 20, height: 20, borderRadius: '50%', border: `2px solid ${INK}`, background: r.have >= r.need ? 'var(--green-500)' : '#fff', display: 'grid', placeItems: 'center', flex: 'none' }}>
-                  {r.have >= r.need && <Icon name="check" size={12} color="#fff" strokeWidth={3.5} />}
-                </span>
-                <span style={{ flex: 1, fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 13.5, color: r.have >= r.need ? 'var(--ink-400)' : INK, textDecoration: r.have >= r.need ? 'line-through' : 'none' }}>{r.label}</span>
-                <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 12, color: 'var(--grape-600)' }}>{r.have}/{r.need}</span>
-              </div>
-            ))}
+        <button onClick={eco.quest.done ? undefined : startQuest} style={{ width: '100%', textAlign: 'left', cursor: eco.quest.done ? 'default' : 'pointer', background: 'var(--sun-100)', border: `2.5px solid ${INK}`, borderRadius: 20, boxShadow: '4px 5px 0 rgba(42,37,33,.85)', padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 13 }}>
+          <span style={{ width: 46, height: 46, borderRadius: 14, background: '#fff', border: `2.5px solid ${INK}`, display: 'grid', placeItems: 'center', flex: 'none', transform: 'rotate(-3deg)' }}>
+            <Icon name={eco.quest.done ? 'check' : 'sprout'} size={22} color="var(--green-600)" />
+          </span>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 10.5, letterSpacing: '.06em', color: 'var(--green-600)' }}>TODAY’S QUEST</div>
+            <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 16, color: INK, lineHeight: 1.15 }}>{eco.quest.done ? 'Done — amazing!' : eco.quest.def.title}</div>
           </div>
-          {eco.weekly.done && !eco.weekly.claimed ? (
-            <button
-              onClick={() => { sfx('cheer'); dispatch({ type: 'claimWeekly', childId: child.id }); }}
-              style={{ width: '100%', border: `2.5px solid ${INK}`, borderRadius: 99, background: 'var(--sun-500)', color: '#3A2A00', fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 15, padding: 11, marginTop: 12, boxShadow: '3px 4px 0 rgba(42,37,33,.85)', cursor: 'pointer' }}
-            >
-              Claim +{REWARD.weeklyAdventure} stars! 🎉
-            </button>
-          ) : eco.weekly.claimed ? (
-            <div style={{ textAlign: 'center', fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 13, color: 'var(--green-600)', marginTop: 11 }}>✓ Claimed — new adventure Monday!</div>
-          ) : (
-            <div style={{ textAlign: 'center', fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 12, color: 'var(--ink-400)', marginTop: 11 }}>
-              Finish all four for +{REWARD.weeklyAdventure} ⭐
-            </div>
-          )}
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: '#fff', border: `2px solid ${INK}`, borderRadius: 99, padding: '3px 10px', fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 11.5, color: 'var(--sun-600)', flex: 'none' }}>
+            <Icon name="star" size={12} color="var(--sun-500)" />+{REWARD.dailyQuestBonus}
+          </span>
+        </button>
+      </div>
+
+      {/* your worlds */}
+      <div style={{ padding: '18px 20px 0' }}>
+        <SectionHead icon="map" tint="var(--green-100)">Your worlds</SectionHead>
+        <div style={{ background: '#fff', border: `2.5px solid ${INK}`, borderRadius: 20, boxShadow: '4px 5px 0 var(--grape-300)', padding: '5px 15px' }}>
+          {eco.journeys.map((j, i) => {
+            const done = j.level >= 5;
+            const current = j.area === eco.currentJourney && !done;
+            const started = j.activities > 0;
+            return (
+              <button key={j.area} onClick={() => { sfx('pop'); onOpenJourney(j.area); }} style={{ width: '100%', textAlign: 'left', cursor: 'pointer', background: 'none', border: 'none', display: 'flex', alignItems: 'center', gap: 11, padding: '11px 0', borderBottom: i < eco.journeys.length - 1 ? '2px dashed var(--grape-100)' : 'none' }}>
+                <span style={{ width: 34, height: 34, borderRadius: 11, background: current ? 'var(--grape-500)' : done ? 'var(--green-500)' : j.color, border: `2px solid ${INK}`, display: 'grid', placeItems: 'center', flex: 'none' }}>
+                  <Icon name={done ? 'check' : j.icon} size={16} color="#fff" />
+                </span>
+                <span style={{ flex: 1, fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 14, color: INK }}>{j.kidWorld}</span>
+                {done ? (
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: 'var(--green-100)', border: `2px solid ${INK}`, borderRadius: 99, padding: '2px 10px', fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 9.5, color: 'var(--green-600)' }}><Icon name="check" size={10} color="var(--green-600)" />Done</span>
+                ) : current ? (
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                    <span style={{ width: 44, height: 8, border: `2px solid ${INK}`, borderRadius: 5, background: '#fff', overflow: 'hidden', display: 'inline-block' }}><span style={{ display: 'block', width: `${(j.level / 5) * 100}%`, height: '100%', background: 'var(--grape-500)' }} /></span>
+                    <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 9.5, color: 'var(--grape-600)' }}>Lv {j.level}</span>
+                  </span>
+                ) : started ? (
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: 'var(--sun-100)', border: `2px solid ${INK}`, borderRadius: 99, padding: '2px 10px', fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 9.5, color: 'var(--sun-600)' }}><Icon name="play" size={9} color="var(--sun-600)" />Started</span>
+                ) : (
+                  <span style={{ background: '#fff', border: `2px solid ${INK}`, borderRadius: 99, padding: '2px 10px', fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 9.5, color: 'var(--ink-400)' }}>Not started</span>
+                )}
+              </button>
+            );
+          })}
         </div>
       </div>
 
@@ -207,56 +183,23 @@ export function KidQuest({ child, onPlay, onOpenJourney, onBoss }: {
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 13 }}>
             {eco.rwc.status === 'new' && (
-              <button onClick={() => { sfx('pop'); dispatch({ type: 'rwcSet', childId: child.id, status: 'trying' }); }} style={{ flex: 1, border: `2.5px solid ${INK}`, borderRadius: 99, background: 'var(--green-500)', color: '#fff', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 15, padding: 11, boxShadow: '3px 4px 0 rgba(42,37,33,.85)', cursor: 'pointer' }}>
-                I’ll try it!
-              </button>
+              <button onClick={() => { sfx('pop'); dispatch({ type: 'rwcSet', childId: child.id, status: 'trying' }); }} style={{ flex: 1, border: `2.5px solid ${INK}`, borderRadius: 99, background: 'var(--green-500)', color: '#fff', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 15, padding: 11, boxShadow: '3px 4px 0 rgba(42,37,33,.85)', cursor: 'pointer' }}>I’ll try it!</button>
             )}
             {eco.rwc.status === 'trying' && (
-              <button onClick={() => { sfx('star'); dispatch({ type: 'rwcSet', childId: child.id, status: 'did' }); }} style={{ flex: 1, border: `2.5px solid ${INK}`, borderRadius: 99, background: 'var(--green-500)', color: '#fff', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 15, padding: 11, boxShadow: '3px 4px 0 rgba(42,37,33,.85)', cursor: 'pointer' }}>
-                I did it! ✋
-              </button>
+              <button onClick={() => { sfx('star'); dispatch({ type: 'rwcSet', childId: child.id, status: 'did' }); }} style={{ flex: 1, border: `2.5px solid ${INK}`, borderRadius: 99, background: 'var(--green-500)', color: '#fff', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 15, padding: 11, boxShadow: '3px 4px 0 rgba(42,37,33,.85)', cursor: 'pointer' }}>I did it! ✋</button>
             )}
             {eco.rwc.status === 'did' && (
-              <div style={{ flex: 1, border: `2.5px solid ${INK}`, borderRadius: 99, background: '#fff', color: INK, fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 13.5, padding: 11, textAlign: 'center' }}>
-                Waiting for a grown-up… ⭐
-              </div>
+              <div style={{ flex: 1, border: `2.5px solid ${INK}`, borderRadius: 99, background: '#fff', color: INK, fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 13.5, padding: 11, textAlign: 'center' }}>Waiting for a grown-up… ⭐</div>
             )}
             {eco.rwc.status === 'verified' && (
-              <div style={{ flex: 1, border: `2.5px solid ${INK}`, borderRadius: 99, background: 'var(--green-500)', color: '#fff', fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 15, padding: 11, textAlign: 'center' }}>
-                ✓ Completed!
-              </div>
+              <div style={{ flex: 1, border: `2.5px solid ${INK}`, borderRadius: 99, background: 'var(--green-500)', color: '#fff', fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 15, padding: 11, textAlign: 'center' }}>✓ Completed!</div>
             )}
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: '#fff', border: `2px solid ${INK}`, borderRadius: 99, padding: '6px 12px', fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 12, color: 'var(--sun-600)', flex: 'none' }}>
-              <Icon name="star" size={13} color="var(--sun-500)" fill="var(--sun-500)" />
-              {eco.rwc.status === 'verified' ? `+${REWARD.realworldDidIt + REWARD.realworldVerify}` : `+${REWARD.realworldDidIt}`}
+              <Icon name="star" size={13} color="var(--sun-500)" fill="var(--sun-500)" />+{REWARD.realworldDidIt}
             </span>
           </div>
         </div>
       </div>
-
-      {/* world picker */}
-      <Sheet open={worldsOpen} onClose={() => setWorldsOpen(false)} title="Pick a world 🌍">
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {eco.journeys.map((j) => (
-            <button
-              key={j.area}
-              onClick={() => { setWorldsOpen(false); sfx('enter'); onOpenJourney(j.area); }}
-              style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '11px 13px', background: '#fff', border: `2.5px solid ${INK}`, borderRadius: 16, boxShadow: '2px 3px 0 var(--grape-300)', cursor: 'pointer', textAlign: 'left' }}
-            >
-              <span style={{ width: 40, height: 40, borderRadius: 12, background: j.color, border: `2px solid ${INK}`, display: 'grid', placeItems: 'center', flex: 'none' }}>
-                <Icon name={j.icon} size={19} color="#fff" />
-              </span>
-              <span style={{ flex: 1 }}>
-                <span style={{ display: 'block', fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 15, color: INK }}>{j.kidWorld}</span>
-                <span style={{ display: 'block', fontSize: 11.5, fontWeight: 700, color: 'var(--ink-500)' }}>
-                  {j.activities === 0 ? 'Not started' : `Level ${j.level} · ${j.activities} activities`}
-                </span>
-              </span>
-              <ArrowCoin color={j.color} size={30} />
-            </button>
-          ))}
-        </div>
-      </Sheet>
     </div>
   );
 }
