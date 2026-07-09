@@ -1,7 +1,9 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../store/AppStore';
 import { usePlan } from '../engine/plan';
+import { lessonCategory, lessonContentById, lessonVisual, situationCategory } from '../data/lessons';
+import { areaParentLabel } from '../constants/areas';
 import { Badge, Button, Card, Icon, IconButton, Input, Sheet } from '../components/ds';
 import { CoachMessage } from '../components/ds';
 
@@ -10,6 +12,8 @@ interface Msg {
   text: string;
   script?: string;
   safety?: boolean;
+  /** Lesson ids Sprout recommended, rendered as tappable cards. */
+  lessons?: string[];
 }
 
 const QUICK_PROMPTS = ['She’s having a meltdown', 'Won’t talk to me', 'Fighting with sibling'];
@@ -40,9 +44,30 @@ export function Coach() {
   const { state, activeChild } = useApp();
   const intro: Msg = {
     from: 'coach',
-    text: `Hi ${state.parent.name || 'there'} — I'm here for the in-the-moment stuff. What's going on right now?`,
+    text: `Hi ${state.parent.name || 'there'} — tell me what's going on, and I'll point you to the lesson that fits.`,
   };
   const [thread, setThread] = useState<Msg[]>([intro]);
+
+  // Compact catalog of the app's lessons — sent so Sprout can only recommend
+  // real, existing lessons (never invent advice).
+  const catalog = useMemo(
+    () =>
+      state.lessons.map((l) => {
+        const c = lessonContentById(l.id);
+        const tag = c?.parentCategory
+          ? lessonCategory(c.parentCategory).label
+          : c?.situationCategory
+          ? situationCategory(c.situationCategory).label
+          : c?.areaTags?.[0]
+          ? areaParentLabel(c.areaTags[0])
+          : l.shelf === 'talking'
+          ? 'Talking with your child'
+          : 'Your situations';
+        const about = (c?.theMoment || c?.whatsReallyGoingOn || '').slice(0, 180);
+        return { id: l.id, title: l.title, tag, about };
+      }),
+    [state.lessons],
+  );
   const askedCount = thread.filter((m) => m.from === 'me').length;
   const freeLimitHit = !plan.isPremium && askedCount >= 1;
   const [text, setText] = useState('');
@@ -81,15 +106,16 @@ export function Coach() {
           messages: apiMessages,
           parentName: state.parent.name,
           childName: activeChild?.name,
-          childAge: activeChild?.age,
+          catalog,
         }),
       });
-      const data = (await r.json()) as { reply?: string };
+      const data = (await r.json()) as { reply?: string; lessons?: string[] };
       setThread((t) => [
         ...t,
         {
           from: 'coach',
           text: data.reply || "I'm having trouble connecting right now — try me again in a moment.",
+          lessons: Array.isArray(data.lessons) ? data.lessons : undefined,
         },
       ]);
     } catch {
@@ -118,9 +144,16 @@ export function Coach() {
           <Badge tone="coach"><Icon name="shield-check" size={13} /> Educational, not professional advice</Badge>
         </div>
         {thread.map((m, i) => (
-          m.safety
-            ? <SafetyMessage key={i} text={m.text} />
-            : <CoachMessage key={i} from={m.from} script={m.script}>{m.text}</CoachMessage>
+          m.safety ? (
+            <SafetyMessage key={i} text={m.text} />
+          ) : (
+            <div key={i} style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <CoachMessage from={m.from} script={m.script}>{m.text}</CoachMessage>
+              {m.lessons?.map((id) => (
+                <LessonRec key={id} id={id} title={state.lessons.find((l) => l.id === id)?.title} onOpen={() => navigate(`/lessons/${id}`)} />
+              ))}
+            </div>
+          )
         ))}
         {sending && <TypingBubble />}
       </div>
@@ -159,14 +192,39 @@ export function Coach() {
 
       <Sheet open={scopeOpen} onClose={() => setScopeOpen(false)} title="About your coach">
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          <GuardRow icon="message-circle" tone="coach" title="Communication only" text="I help with what to say and how to say it — not medical, legal, or clinical advice." />
+          <GuardRow icon="compass" tone="coach" title="I point you to lessons" text="Tell me what’s going on and I’ll find the lesson that fits. I don’t give my own advice or diagnose." />
           <GuardRow icon="life-buoy" tone="accent" title="If it’s urgent" text="For safety or crisis situations I’ll point you to real resources and people who can help right away." />
-          <GuardRow icon="book-open" tone="primary" title="Grounded in the book" text="Every tip ties back to a lesson and a script you can open and save." />
+          <GuardRow icon="book-open" tone="primary" title="Grounded in the app" text="Every suggestion is a real lesson you can open, read, and save — never made-up advice." />
           <GuardRow icon="lock" tone="primary" title="Private by default" text="Your chats stay on this device, are never used for ads, and you can delete them anytime." />
           <Button variant="primary" fullWidth onClick={() => setScopeOpen(false)}>Got it</Button>
         </div>
       </Sheet>
     </div>
+  );
+}
+
+function LessonRec({ id, title, onOpen }: { id: string; title?: string; onOpen: () => void }) {
+  const content = lessonContentById(id);
+  const vis = content ? lessonVisual(content) : { color: 'var(--grape-500)', icon: 'book-open' };
+  const label = title || content?.title || 'Open lesson';
+  return (
+    <button
+      onClick={onOpen}
+      style={{
+        display: 'flex', alignItems: 'center', gap: 11, alignSelf: 'stretch', textAlign: 'left',
+        background: 'var(--surface)', border: '2px solid #2A2521', borderRadius: 16,
+        boxShadow: '3px 3px 0 rgba(42,37,33,.5)', padding: '11px 13px', cursor: 'pointer',
+      }}
+    >
+      <span style={{ width: 40, height: 40, borderRadius: 12, background: vis.color, border: '2px solid #2A2521', display: 'grid', placeItems: 'center', flex: 'none' }}>
+        <Icon name={vis.icon} size={20} color="#fff" />
+      </span>
+      <span style={{ flex: 1, minWidth: 0 }}>
+        <span style={{ display: 'block', fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 'var(--text-2xs)', letterSpacing: '.05em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>Recommended lesson</span>
+        <span style={{ display: 'block', fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 'var(--text-md)', color: 'var(--text-strong)', lineHeight: 1.2 }}>{label}</span>
+      </span>
+      <Icon name="arrow-right" size={20} color="#2A2521" />
+    </button>
   );
 }
 
