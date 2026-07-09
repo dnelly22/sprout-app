@@ -27,6 +27,10 @@ export function BottomNav({ active, onChange }: BottomNavProps) {
     <nav
       aria-label="Primary"
       style={{
+        // position + z-index keep the raised centre button (which pokes 24px
+        // above the nav) painting above the momentum-scrolling content layer,
+        // so its top never gets clipped while scrolling.
+        position: 'relative', zIndex: 20,
         height: 'var(--nav-h)', flex: 'none', background: '#fff',
         borderTop: `2.5px solid ${INK}`, display: 'flex',
         paddingBottom: 'env(safe-area-inset-bottom, 0)',
