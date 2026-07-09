@@ -7,18 +7,24 @@ import { Mascot } from '../screens/kidzone/Mascot';
 /*
  * Guided first-run tour ("see it work"). After onboarding, a non-modal coach bar
  * walks the parent through the real app so they hit the value immediately:
- *   intro → Kid Zone (mandatory taste, play a game) → progress → parent library.
+ *   Kid Zone (mandatory taste — play a real Journey) → the three games → the
+ *   Journey tab (growth) → the lesson library → Ask Sprout.
  * Non-modal on purpose — the rest of the screen stays tappable so they actually
  * play. Runs once (settings.tourDone), skippable after the mandatory Kid Zone step.
+ *
+ * NOTE: step ids 'kid-journey' and 'kid-games' are load-bearing — KidZone reads
+ * useTour() to auto-open the Journey demo on 'kid-journey' and drop back to the
+ * Play grid on 'kid-games'. Keep those ids if you edit the steps.
  */
 
 interface Step { id: string; route?: string; title: string; body: string; mandatory?: boolean; top?: boolean }
 const STEPS: Step[] = [
   // Starts right inside a real, playing Journey game — value first, and mandatory.
   { id: 'kid-journey', route: '/kid', mandatory: true, top: true, title: 'This is a Journey', body: 'Watch — {kid} rehearses a real moment. Tap an answer to try it, then hit Next.' },
-  { id: 'kid-games', route: '/kid', title: 'Three ways to practice', body: 'Journey tells a story. Quick Fire trains fast thinking. Say It Out Loud practices the real words.' },
-  { id: 'progress', route: '/progress', title: '{kid}’s profile & yours', body: 'Watch {kid} grow — levels, badges, streaks — plus your own learning.' },
-  { id: 'library', route: '/lessons', title: 'Your script library', body: 'Exactly what to say — for {kid}, and with {kid}. This part’s for you.' },
+  { id: 'kid-games', route: '/kid', title: 'Three ways to play', body: 'This is {kid}’s Play tab: Journey tells a story, Quick Fire trains fast thinking, and Say It Out Loud practices the real words.' },
+  { id: 'progress', route: '/progress', title: 'The Journey tab', body: 'Watch {kid} grow — levels, badges and streaks — and flip to your own learning any time.' },
+  { id: 'library', route: '/lessons', title: 'Your lesson library', body: 'Real scripts for what to say — “Talking with {kid}” and “Your Situations.” It all lives under Learn.' },
+  { id: 'ask-sprout', route: '/coach', title: 'Stuck? Ask Sprout', body: 'Tell Sprout what’s going on and it points you straight to the lesson that fits. Tap the ✨ in the middle any time.' },
 ];
 
 interface TourCtx { active: boolean; stepId: string | null }
