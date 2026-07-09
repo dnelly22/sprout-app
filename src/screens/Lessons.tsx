@@ -14,7 +14,7 @@ import type { Lesson, LessonShelf } from '../types';
  * two big category buttons → popular → completed. Search on demand.
  */
 export function Lessons() {
-  const { state, activeChild, goalForActive } = useApp();
+  const { state, activeChild } = useApp();
   const navigate = useNavigate();
   const plan = usePlan();
   const freeId = state.lessons[FREE_LESSON_INDEX]?.id;
@@ -34,17 +34,8 @@ export function Lessons() {
     [searching, q, state.lessons],
   );
 
-  const recommended = useMemo(() => {
-    const area = goalForActive?.area;
-    return (area && state.lessons.find((l) => l.shelf === 'talking' && l.areaTags.includes(area) && l.status !== 'done'))
-      ?? state.lessons.find((l) => l.status !== 'done')
-      ?? state.lessons[0];
-  }, [state.lessons, goalForActive]);
-
-  const inProgress = state.lessons.find((l) => l.status === 'in-progress' && l.id !== recommended.id);
   const talking = state.lessons.filter((l) => l.shelf === 'talking');
   const situations = state.lessons.filter((l) => l.shelf === 'situations');
-  const recentlyAdded = state.lessons.slice(-4).reverse();
   const popular = useMemo(() => [talking[2], situations[1], talking[7]].filter(Boolean) as Lesson[], [state.lessons]); // eslint-disable-line react-hooks/exhaustive-deps
   const completed = state.lessons.filter((l) => l.status === 'done').slice(0, 4);
 
@@ -130,64 +121,34 @@ export function Lessons() {
     <div style={{ minHeight: '100%', ...popBg, paddingBottom: 28 }} className="fade-up">
       {header}
 
-      {/* recommended hero + continue docked */}
+      {/* browse the library — two big category buttons */}
       <div style={{ padding: '12px 20px 0' }}>
-        <SectionHead icon="star" tint="var(--sun-100)">Recommended for you</SectionHead>
-        <PopCard tone="grape" shadow="ink" onClick={() => open(recommended.id)} style={{ padding: '16px 16px', position: 'relative', zIndex: 1 }}>
-          <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 19, lineHeight: 1.15 }}>{recommended.title}</div>
-          <div style={{ fontSize: 12.5, fontWeight: 700, color: 'rgba(255,255,255,.75)', marginTop: 4 }}>3 minute read</div>
-          <button style={{ marginTop: 11, border: `2.5px solid ${INK}`, borderRadius: 99, background: '#fff', color: INK, fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 13.5, padding: '8px 18px', boxShadow: '2px 3px 0 rgba(42,37,33,.5)', cursor: 'pointer' }}>
-            {recommended.status === 'in-progress' ? 'Continue' : 'Start reading'}
-          </button>
-        </PopCard>
-        {inProgress && (
-          <div onClick={() => open(inProgress.id)} style={{ background: 'var(--sun-100)', border: `2.5px solid ${INK}`, borderTop: 'none', borderRadius: '0 0 16px 16px', margin: '0 10px', padding: '10px 14px', display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
-            <Icon name="book-open" size={15} color="var(--sun-600)" />
-            <span style={{ flex: 1, fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 12.5, color: INK, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>Continue: {inProgress.title}</span>
-            <span style={{ width: 56, display: 'flex' }}><InkBar pct={inProgress.progress ?? 50} color="var(--grape-500)" height={8} /></span>
-            <Icon name="arrow-right" size={15} color="var(--grape-600)" />
+        <SectionHead icon="library" tint="var(--grape-100)">Browse the library</SectionHead>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <div onClick={() => { setShelf('talking'); setMode('library'); }} style={{ background: 'linear-gradient(155deg, var(--grape-500), var(--grape-600))', border: `2.5px solid ${INK}`, borderRadius: 20, boxShadow: '4px 5px 0 rgba(42,37,33,.9)', padding: '18px 16px', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 13, minHeight: 118 }}>
+            <span style={{ width: 46, height: 46, borderRadius: 14, background: 'rgba(255,255,255,.18)', border: '2px solid rgba(255,255,255,.55)', display: 'grid', placeItems: 'center', flex: 'none' }}>
+              <Icon name="messages-square" size={22} color="#fff" />
+            </span>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 18, lineHeight: 1.15 }}>Talking with {activeChild.name}</div>
+              <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--grape-100)', marginTop: 3 }}>Scripts for moments together · {talking.length} lessons</div>
+            </div>
+            <span style={{ width: 34, height: 34, borderRadius: '50%', background: '#fff', border: `2px solid ${INK}`, display: 'grid', placeItems: 'center', flex: 'none' }}>
+              <Icon name="arrow-right" size={17} color="var(--grape-600)" />
+            </span>
           </div>
-        )}
-      </div>
-
-      {/* recently added rail */}
-      <div style={{ marginTop: 18 }}>
-        <div style={{ padding: '0 20px' }}><SectionHead icon="sparkles" tint="var(--grape-100)">Recently added</SectionHead></div>
-        <div className="card-rail" style={{ display: 'flex', gap: 10, overflowX: 'auto', padding: '2px 20px 8px' }}>
-          {recentlyAdded.map((l) => {
-            const vis = lessonVisual(l);
-            return (
-              <div key={l.id} onClick={() => open(l.id)} style={{ flex: 'none', width: 150, background: '#fff', border: `2.5px solid ${INK}`, borderRadius: 16, boxShadow: '3px 4px 0 var(--grape-300)', padding: 12, cursor: 'pointer', position: 'relative' }}>
-                <span style={{ position: 'absolute', top: -8, right: 8, background: 'var(--coral-500)', color: '#fff', border: `2px solid ${INK}`, borderRadius: 99, fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 9, padding: '1px 8px' }}>NEW</span>
-                <span style={{ display: 'inline-grid', placeItems: 'center', width: 34, height: 34, borderRadius: 10, background: `color-mix(in srgb, ${vis.color} 18%, white)`, border: `2px solid ${INK}` }}>
-                  <Icon name={vis.icon} size={16} color={vis.color} />
-                </span>
-                <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 12.5, color: INK, lineHeight: 1.25, marginTop: 8, minHeight: 46 }}>{l.title}</div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* two big category buttons */}
-      <div style={{ padding: '10px 20px 0', display: 'flex', flexDirection: 'column', gap: 12 }}>
-        <div onClick={() => { setShelf('talking'); setMode('library'); }} style={{ background: 'linear-gradient(155deg, var(--grape-500), var(--grape-600))', border: `2.5px solid ${INK}`, borderRadius: 20, boxShadow: '4px 5px 0 rgba(42,37,33,.85)', padding: '20px 18px', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 14, minHeight: 100 }}>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 20, lineHeight: 1.15 }}>Talking with {activeChild.name}</div>
-            <div style={{ fontSize: 12.5, fontWeight: 700, color: 'rgba(255,255,255,.75)', marginTop: 4 }}>{talking.length} lessons · scripts for real moments</div>
+          <div onClick={() => { setShelf('situations'); setMode('library'); }} style={{ background: 'linear-gradient(155deg, var(--green-500), var(--green-600, #187347))', border: `2.5px solid ${INK}`, borderRadius: 20, boxShadow: '4px 5px 0 rgba(42,37,33,.9)', padding: '18px 16px', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 13, minHeight: 118 }}>
+            <span style={{ width: 46, height: 46, borderRadius: 14, background: 'rgba(255,255,255,.18)', border: '2px solid rgba(255,255,255,.55)', display: 'grid', placeItems: 'center', flex: 'none' }}>
+              <Icon name="compass" size={22} color="#fff" />
+            </span>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 18, lineHeight: 1.15 }}>Your Situations</div>
+              <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--green-100)', marginTop: 3 }}>Family, school & everywhere else · {situations.length} lessons</div>
+            </div>
+            <span style={{ width: 34, height: 34, borderRadius: '50%', background: '#fff', border: `2px solid ${INK}`, display: 'grid', placeItems: 'center', flex: 'none' }}>
+              <Icon name="arrow-right" size={17} color="var(--green-600)" />
+            </span>
           </div>
-          <span style={{ width: 40, height: 40, borderRadius: '50%', background: '#fff', border: `2px solid ${INK}`, display: 'grid', placeItems: 'center', flex: 'none' }}>
-            <Icon name="arrow-right" size={18} color="var(--grape-600)" />
-          </span>
-        </div>
-        <div onClick={() => { setShelf('situations'); setMode('library'); }} style={{ background: 'linear-gradient(155deg, var(--green-500), var(--green-600, #187347))', border: `2.5px solid ${INK}`, borderRadius: 20, boxShadow: '4px 5px 0 rgba(42,37,33,.85)', padding: '20px 18px', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 14, minHeight: 100 }}>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 20, lineHeight: 1.15 }}>Your Situations</div>
-            <div style={{ fontSize: 12.5, fontWeight: 700, color: 'rgba(255,255,255,.75)', marginTop: 4 }}>{situations.length} lessons · what to do when it happens</div>
-          </div>
-          <span style={{ width: 40, height: 40, borderRadius: '50%', background: '#fff', border: `2px solid ${INK}`, display: 'grid', placeItems: 'center', flex: 'none' }}>
-            <Icon name="arrow-right" size={18} color="var(--green-600)" />
-          </span>
         </div>
       </div>
 

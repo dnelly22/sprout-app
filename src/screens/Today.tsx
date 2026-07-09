@@ -3,8 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { useApp } from '../store/AppStore';
 import { useChildEconomy, type ChildEconomy } from '../engine/selectors';
 import { Icon, Sheet, Input, Button } from '../components/ds';
-import { popBg, PopCard, SectionHead, InkChip, InkBar, ArrowCoin, PopButton, INK, GRAPE } from '../components/pop';
-import { AREAS, areaParentLabel, emptyAreaScores, type AreaKey } from '../constants/areas';
+import { popBg, PopCard, SectionHead, InkChip, InkBar, PopButton, INK, GRAPE } from '../components/pop';
+import { areaParentLabel, emptyAreaScores, type AreaKey } from '../constants/areas';
+import { lessonVisual } from '../data/lessons';
 import { REWARD } from '../engine/economy';
 import { usePlan } from '../engine/plan';
 import type { Child } from '../types';
@@ -37,8 +38,12 @@ export function Today() {
   const plan = usePlan();
 
   const notifItems = useNotifications(eco);
-  const journeyLabel = AREAS.find((a) => a.key === eco.currentJourney);
-  const curJourney = eco.journeys.find((j) => j.area === eco.currentJourney);
+  const continueLesson = useMemo(() => state.lessons.find((l) => l.status === 'in-progress'), [state.lessons]);
+  const recentlyAdded = useMemo(() => state.lessons.slice(-6).reverse().slice(0, 5), [state.lessons]);
+  const topAreas = useMemo(
+    () => (Object.entries(activeChild.areaScores) as [AreaKey, number][]).sort((a, b) => b[1] - a[1]).slice(0, 2),
+    [activeChild.areaScores],
+  );
 
   return (
     <div style={{ minHeight: '100%', ...popBg, paddingBottom: 28 }} className="fade-up">
@@ -53,8 +58,8 @@ export function Today() {
           <Icon name="bell" size={19} color={INK} />
           {notifItems.length > 0 && <span style={{ position: 'absolute', top: -3, right: -3, width: 14, height: 14, borderRadius: '50%', background: 'var(--coral-500)', border: `2px solid ${INK}` }} />}
         </button>
-        <button onClick={() => navigate('/settings')} aria-label="Settings" style={{ width: 40, height: 40, borderRadius: '50%', background: '#fff', border: `2.5px solid ${INK}`, boxShadow: '2px 3px 0 var(--grape-300)', display: 'grid', placeItems: 'center', cursor: 'pointer', flex: 'none' }}>
-          <Icon name="settings" size={19} color={INK} />
+        <button onClick={() => navigate('/settings')} aria-label="Account & settings" style={{ width: 46, height: 46, borderRadius: '50%', background: 'var(--green-400)', border: `2.5px solid ${INK}`, boxShadow: '2px 3px 0 var(--grape-300)', display: 'grid', placeItems: 'center', cursor: 'pointer', flex: 'none', color: '#fff', fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 18 }}>
+          {(state.parent.name?.[0] || 'S').toUpperCase()}
         </button>
       </div>
 
@@ -100,40 +105,32 @@ export function Today() {
         </div>
       )}
 
-      {/* recommended for you */}
+      {/* recommended for you (+ docked continue-reading bar) */}
       <div style={{ padding: '18px 20px 0' }}>
         <SectionHead icon="star" tint="var(--sun-100)">Recommended for you</SectionHead>
-        <PopCard tone="grape" shadow="ink" onClick={() => navigate(`/lessons/${recommended.id}`)} style={{ padding: '16px 16px' }}>
+        <PopCard tone="grape" shadow="ink" onClick={() => navigate(`/lessons/${recommended.id}`)} style={{ padding: '16px 16px', borderRadius: continueLesson ? '20px 20px 4px 4px' : 20, position: 'relative', zIndex: 1 }}>
           <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 11, letterSpacing: '.07em', color: 'var(--grape-100)' }}>PARENT LESSON</div>
           <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 20, lineHeight: 1.15, marginTop: 5 }}>{recommended.title}</div>
-          <div style={{ fontSize: 12.5, fontWeight: 700, color: 'rgba(255,255,255,.75)', marginTop: 4 }}>3 minute read</div>
-          <button style={{ marginTop: 12, border: `2.5px solid ${INK}`, borderRadius: 99, background: '#fff', color: INK, fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 14, padding: '9px 20px', boxShadow: '2px 3px 0 rgba(42,37,33,.5)', cursor: 'pointer' }}>
-            {recommended.status === 'in-progress' ? 'Continue' : 'Start reading'}
-          </button>
-        </PopCard>
-      </div>
-
-      {/* continue learning (kid) */}
-      <div style={{ padding: '18px 20px 0' }}>
-        <SectionHead icon="play" tint="var(--grape-100)">Continue learning</SectionHead>
-        <PopCard onClick={() => navigate('/kid')} style={{ padding: '14px 15px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <span style={{ width: 46, height: 46, borderRadius: 14, background: 'var(--grape-100)', border: `2.5px solid ${INK}`, display: 'grid', placeItems: 'center', flex: 'none' }}>
-              <Icon name="gamepad-2" size={22} color="var(--grape-600)" />
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 14 }}>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 12.5, fontWeight: 800, color: 'var(--grape-100)' }}><Icon name="book-open" size={14} color="#fff" />3 min read</span>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7, background: '#fff', color: 'var(--grape-600)', border: `2px solid ${INK}`, fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 13.5, padding: '8px 15px', borderRadius: 99, boxShadow: '2px 3px 0 rgba(42,37,33,.4)' }}>
+              {recommended.status === 'in-progress' ? 'Continue' : 'Start reading'} <Icon name="arrow-right" size={15} color="var(--grape-600)" />
             </span>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 10.5, fontWeight: 800, color: 'var(--ink-400)', letterSpacing: '.05em' }}>
-                {eco.parentRecommended ? 'YOU RECOMMENDED' : 'JOURNEY'} · {journeyLabel?.kidWorld.toUpperCase()}
-              </div>
-              <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 16.5, color: INK }}>{journeyLabel?.parentLabel}</div>
-            </div>
-            <ArrowCoin />
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 9, marginTop: 11 }}>
-            <InkBar striped pct={((curJourney?.level ?? 0) / 5) * 100} />
-            <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 12, color: 'var(--grape-600)' }}>Lv {curJourney?.level ?? 0} / 5</span>
           </div>
         </PopCard>
+        {continueLesson && (
+          <div onClick={() => navigate(`/lessons/${continueLesson.id}`)} style={{ background: 'var(--sun-100)', border: `2.5px solid ${INK}`, borderTop: 'none', borderRadius: '0 0 18px 18px', margin: '0 12px', padding: '10px 14px', display: 'flex', alignItems: 'center', gap: 10, boxShadow: '3px 4px 0 var(--grape-300)', cursor: 'pointer' }}>
+            <Icon name="bookmark" size={15} color={INK} />
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 12, color: INK, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Continue: {continueLesson.title}</div>
+              <div style={{ height: 6, border: `1.5px solid ${INK}`, borderRadius: 4, background: '#fff', overflow: 'hidden', marginTop: 4 }}>
+                <div style={{ width: `${continueLesson.progress ?? 60}%`, height: '100%', background: 'var(--coral-500)' }} />
+              </div>
+            </div>
+            <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 11, color: 'var(--coral-600)', flex: 'none' }}>{continueLesson.progress ?? 60}%</span>
+            <span style={{ width: 32, height: 32, borderRadius: '50%', background: 'var(--grape-500)', border: `2px solid ${INK}`, display: 'grid', placeItems: 'center', flex: 'none' }}><Icon name="arrow-right" size={16} color="#fff" /></span>
+          </div>
+        )}
       </div>
 
       {/* 2-up: daily challenge + achievement */}
@@ -179,38 +176,37 @@ export function Today() {
         </PopCard>
       </div>
 
-      {/* weekly summary */}
-      <div style={{ padding: '18px 20px 0' }}>
-        <SectionHead icon="calendar-check" tint="var(--green-100)">This week</SectionHead>
-        <PopCard style={{ padding: '13px 16px' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 8, textAlign: 'center' }}>
-            <WeekStat icon="star" color="var(--sun-500)" value={eco.summary.stars} label="Stars" />
-            <WeekStat icon="gamepad-2" color="var(--grape-500)" value={eco.summary.journeys + eco.summary.quickfires + eco.summary.sayits} label="Games" />
-            <WeekStat icon="globe" color="var(--sky-500)" value={eco.summary.realworld} label="Real world" />
-            <WeekStat icon="award" color="var(--coral-500)" value={Object.values(state.earnedBadges[activeChild.id] ?? {}).filter((ts) => Date.now() - ts < 7 * 86400000).length} label="Badges" />
-          </div>
-          <div style={{ borderTop: '2px dashed var(--grape-100)', marginTop: 11, paddingTop: 10, display: 'flex', alignItems: 'center', gap: 8 }}>
-            <Icon name="lightbulb" size={15} color="var(--sun-600)" />
-            <span style={{ flex: 1, fontSize: 12.5, fontWeight: 700, color: 'var(--ink-700)', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-              Next week: <b>{recommended.title}</b>
-            </span>
-            <button onClick={() => navigate(`/lessons/${recommended.id}`)} style={{ border: 'none', background: 'none', fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 12, color: 'var(--grape-600)', cursor: 'pointer', flex: 'none' }}>Read →</button>
-          </div>
-        </PopCard>
+      {/* recently added rail */}
+      <div style={{ marginTop: 18 }}>
+        <div style={{ padding: '0 20px' }}><SectionHead icon="sparkles" tint="var(--sun-100)">Recently added</SectionHead></div>
+        <div className="card-rail" style={{ display: 'flex', gap: 11, overflowX: 'auto', padding: '2px 20px 8px' }}>
+          {recentlyAdded.map((l) => {
+            const vis = lessonVisual(l);
+            return (
+              <div key={l.id} onClick={() => navigate(`/lessons/${l.id}`)} style={{ flex: 'none', width: 150, background: '#fff', border: `2.5px solid ${INK}`, borderRadius: 16, boxShadow: '3px 4px 0 var(--grape-300)', overflow: 'hidden', cursor: 'pointer', position: 'relative' }}>
+                <span style={{ position: 'absolute', top: 8, left: 8, zIndex: 1, background: 'var(--coral-500)', color: '#fff', border: `2px solid ${INK}`, borderRadius: 99, fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 9.5, padding: '1px 8px' }}>NEW</span>
+                <div style={{ height: 64, background: `color-mix(in srgb, ${vis.color} 18%, white)`, borderBottom: `2px solid ${INK}`, display: 'grid', placeItems: 'center' }}>
+                  <Icon name={vis.icon} size={26} color={vis.color} />
+                </div>
+                <div style={{ padding: '9px 11px 11px', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 13, lineHeight: 1.22, color: INK, minHeight: 46 }}>{l.title}</div>
+              </div>
+            );
+          })}
+          <div style={{ flex: 'none', width: 8 }} />
+        </div>
       </div>
 
-      {/* child progress */}
+      {/* child progress — skill bars */}
       <div style={{ padding: '18px 20px 0' }}>
         <SectionHead icon="trending-up" tint="#E7F2FB" action="See full" onAction={() => navigate('/progress')}>{activeChild.name}’s progress</SectionHead>
-        <PopCard style={{ padding: '5px 16px' }}>
-          {eco.journeys.slice(0, 3).map((j, i) => (
-            <div key={j.area} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '11px 0', borderBottom: i < 2 ? '2px dashed var(--grape-100)' : 'none' }}>
-              <span style={{ width: 30, height: 30, borderRadius: 9, background: j.color, border: `2px solid ${INK}`, display: 'grid', placeItems: 'center', flex: 'none' }}>
-                <Icon name={j.icon} size={15} color="#fff" />
-              </span>
-              <span style={{ width: 100, flex: 'none', fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 13, color: INK }}>{j.kidWorld}</span>
-              <InkBar pct={(j.level / 5) * 100} color={j.color} height={10} />
-              <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 11.5, color: 'var(--ink-500)', flex: 'none' }}>Lv {j.level}</span>
+        <PopCard style={{ padding: '15px 16px' }}>
+          {topAreas.map(([area, score], i) => (
+            <div key={area} style={{ marginBottom: i < topAreas.length - 1 ? 12 : 0 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 5 }}>
+                <span style={{ fontWeight: 800, fontSize: 13, color: 'var(--ink-700)' }}>{areaParentLabel(area)}</span>
+                <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 12.5, color: INK }}>{score}%</span>
+              </div>
+              <InkBar pct={score} color={i === 0 ? 'var(--grape-500)' : 'var(--sky-500)'} height={11} />
             </div>
           ))}
         </PopCard>
@@ -236,17 +232,6 @@ export function Today() {
   );
 }
 
-function WeekStat({ icon, color, value, label }: { icon: string; color: string; value: number; label: string }) {
-  return (
-    <div>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}>
-        <Icon name={icon} size={15} color={color} />
-        <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 20, color: INK }}>{value}</span>
-      </div>
-      <div style={{ fontSize: 10.5, fontWeight: 800, color: 'var(--ink-400)', textTransform: 'uppercase', letterSpacing: '.05em' }}>{label}</div>
-    </div>
-  );
-}
 
 /* ---------- notifications (derived parent updates feed) ---------- */
 export interface NotifItem { icon: string; tint: string; title: string; sub?: string; action?: { label: string; to: string } }
