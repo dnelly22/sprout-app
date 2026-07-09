@@ -32,7 +32,7 @@ export function KidZone() {
   const child = activeChild;
 
   // During the guided tour the parent is watching — skip the "hand phone over" gate.
-  const inKidTour = tour.active && (tour.stepId === 'kid-journey' || tour.stepId === 'kid-games');
+  const inKidTour = tour.active && tour.stepId === 'kid';
   const [entered, setEntered] = useState(inKidTour);
   useEffect(() => { if (inKidTour) setEntered(true); }, [inKidTour]);
   const [view, setView] = useState<'quest' | 'me'>('quest');
@@ -54,11 +54,9 @@ export function KidZone() {
 
   useEffect(() => { if (game || boss) sfx('enter'); }, [game, boss]);
 
-  // Tour drives the Journey demo: step 'kid-journey' auto-opens the Friends world
-  // (the free scenario auto-launches into its game); later steps show the quest.
+  // The tour shows the Play grid (not a game in progress), so keep it closed.
   useEffect(() => {
-    if (!tour.active) return;
-    setJourneyArea(tour.stepId === 'kid-journey' ? 'connect' : null);
+    if (tour.active) setJourneyArea(null);
   }, [tour.active, tour.stepId]);
 
   const exitToParent = () => navigate('/today');

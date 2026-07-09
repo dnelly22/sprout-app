@@ -124,7 +124,7 @@ export function Lessons() {
       {/* browse the library — two big category buttons */}
       <div style={{ padding: '12px 20px 0' }}>
         <SectionHead icon="library" tint="var(--grape-100)">Browse the library</SectionHead>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <div data-tour="lessons-cats" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           <div onClick={() => { setShelf('talking'); setMode('library'); }} style={{ background: 'linear-gradient(155deg, var(--grape-500), var(--grape-600))', border: `2.5px solid ${INK}`, borderRadius: 20, boxShadow: '4px 5px 0 rgba(42,37,33,.9)', padding: '18px 16px', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 13, minHeight: 118 }}>
             <span style={{ width: 46, height: 46, borderRadius: 14, background: 'rgba(255,255,255,.18)', border: '2px solid rgba(255,255,255,.55)', display: 'grid', placeItems: 'center', flex: 'none' }}>
               <Icon name="messages-square" size={22} color="#fff" />
