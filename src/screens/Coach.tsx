@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useApp } from '../store/AppStore';
 import { usePlan } from '../engine/plan';
 import { Badge, Button, Card, Icon, IconButton, Input, Sheet } from '../components/ds';
 import { CoachMessage } from '../components/ds';
@@ -10,11 +11,6 @@ interface Msg {
   script?: string;
   safety?: boolean;
 }
-
-const INTRO: Msg = {
-  from: 'coach',
-  text: "Hi Jordan — I'm here for the in-the-moment stuff. What's going on right now?",
-};
 
 const QUICK_PROMPTS = ['She’s having a meltdown', 'Won’t talk to me', 'Fighting with sibling'];
 
@@ -32,41 +28,78 @@ function isCrisis(text: string): boolean {
   return CRISIS_PATTERNS.some((re) => re.test(text));
 }
 
-function cannedReply(userText: string): Msg {
-  if (isCrisis(userText)) {
-    return {
-      from: 'coach',
-      safety: true,
-      text: 'This sounds serious, and it’s bigger than communication coaching. Please reach out right now to someone who can help in person — a trusted adult, your child’s doctor, or your local emergency number. If you or your child may be in danger, contact local emergency services or a crisis line in your area immediately. You don’t have to handle this alone.',
-    };
-  }
-  return {
-    from: 'coach',
-    text: 'That’s a tough moment. This connects to Staying calm — reflect what you see first, then offer one small choice. Want me to open that lesson?',
-    script: '“You’re really frustrated practice got cancelled. Want to pick what we do instead?”',
-  };
-}
+const CRISIS_REPLY: Msg = {
+  from: 'coach',
+  safety: true,
+  text: 'This sounds serious, and it’s bigger than communication coaching. Please reach out right now to someone who can help in person — a trusted adult, your child’s doctor, or your local emergency number. If you or your child may be in danger, contact local emergency services or a crisis line in your area immediately. You don’t have to handle this alone.',
+};
 
 export function Coach() {
   const plan = usePlan();
   const navigate = useNavigate();
-  const [thread, setThread] = useState<Msg[]>([INTRO]);
+  const { state, activeChild } = useApp();
+  const intro: Msg = {
+    from: 'coach',
+    text: `Hi ${state.parent.name || 'there'} — I'm here for the in-the-moment stuff. What's going on right now?`,
+  };
+  const [thread, setThread] = useState<Msg[]>([intro]);
   const askedCount = thread.filter((m) => m.from === 'me').length;
   const freeLimitHit = !plan.isPremium && askedCount >= 1;
   const [text, setText] = useState('');
+  const [sending, setSending] = useState(false);
   const [scopeOpen, setScopeOpen] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (endRef.current) endRef.current.scrollTop = endRef.current.scrollHeight;
-  }, [thread]);
+  }, [thread, sending]);
 
-  const send = (msg?: string) => {
+  const send = async (msg?: string) => {
     const m = (msg ?? text).trim();
-    if (!m || freeLimitHit) return;
+    if (!m || freeLimitHit || sending) return;
     setText('');
-    setThread((t) => [...t, { from: 'me', text: m }]);
-    setTimeout(() => setThread((t) => [...t, cannedReply(m)]), 500);
+
+    const next: Msg[] = [...thread, { from: 'me', text: m }];
+    // Crisis is handled locally and instantly — never routed to the model.
+    if (isCrisis(m)) {
+      setThread([...next, CRISIS_REPLY]);
+      return;
+    }
+    setThread(next);
+    setSending(true);
+
+    // Build the API history: drop the leading intro, map to user/assistant.
+    const apiMessages = next
+      .filter((x, i) => !(i === 0 && x.from === 'coach'))
+      .map((x) => ({ role: x.from === 'me' ? 'user' : 'assistant', content: x.text }));
+
+    try {
+      const r = await fetch('/api/ask', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          messages: apiMessages,
+          parentName: state.parent.name,
+          childName: activeChild?.name,
+          childAge: activeChild?.age,
+        }),
+      });
+      const data = (await r.json()) as { reply?: string };
+      setThread((t) => [
+        ...t,
+        {
+          from: 'coach',
+          text: data.reply || "I'm having trouble connecting right now — try me again in a moment.",
+        },
+      ]);
+    } catch {
+      setThread((t) => [
+        ...t,
+        { from: 'coach', text: "I'm having trouble connecting right now — try me again in a moment." },
+      ]);
+    } finally {
+      setSending(false);
+    }
   };
 
   return (
@@ -89,6 +122,7 @@ export function Coach() {
             ? <SafetyMessage key={i} text={m.text} />
             : <CoachMessage key={i} from={m.from} script={m.script}>{m.text}</CoachMessage>
         ))}
+        {sending && <TypingBubble />}
       </div>
 
       <div style={{ padding: '8px 16px 14px', borderTop: '1.5px solid var(--border)', background: 'var(--surface)' }}>
@@ -110,7 +144,15 @@ export function Coach() {
           ))}
         </div>
         <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-          <div style={{ flex: 1 }}><Input value={text} onChange={(e) => setText(e.target.value)} placeholder="What’s happening right now?" /></div>
+          <div style={{ flex: 1 }}>
+            <Input
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } }}
+              placeholder={sending ? 'Sprout is thinking…' : 'What’s happening right now?'}
+              disabled={sending || freeLimitHit}
+            />
+          </div>
           <IconButton variant="solid" label="Send" onClick={() => send()}><Icon name="arrow-up" size={22} color="#fff" /></IconButton>
         </div>
       </div>
@@ -124,6 +166,22 @@ export function Coach() {
           <Button variant="primary" fullWidth onClick={() => setScopeOpen(false)}>Got it</Button>
         </div>
       </Sheet>
+    </div>
+  );
+}
+
+function TypingBubble() {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 8, alignSelf: 'flex-start' }}>
+      <span style={{ width: 30, height: 30, borderRadius: '50%', background: 'linear-gradient(180deg, #FAC3ED, #2A8FD8)', border: '2px solid #2A2521', display: 'grid', placeItems: 'center', flex: 'none' }}>
+        <Icon name="sparkles" size={15} color="#fff" />
+      </span>
+      <div style={{ display: 'flex', gap: 4, background: 'var(--surface)', border: '1.5px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '12px 14px' }}>
+        {[0, 1, 2].map((i) => (
+          <span key={i} style={{ width: 7, height: 7, borderRadius: '50%', background: 'var(--text-faint)', animation: 'sproutTyping 1.1s infinite', animationDelay: `${i * 0.18}s` }} />
+        ))}
+      </div>
+      <style>{'@keyframes sproutTyping{0%,60%,100%{opacity:.25;transform:translateY(0)}30%{opacity:1;transform:translateY(-3px)}}'}</style>
     </div>
   );
 }

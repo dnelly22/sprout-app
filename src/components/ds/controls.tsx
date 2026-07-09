@@ -116,23 +116,25 @@ export function Chip({ children, selected, color = 'var(--primary)', onClick, st
 interface InputProps {
   value: string;
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onKeyDown?: (e: React.KeyboardEvent<HTMLInputElement>) => void;
   placeholder?: string;
   type?: string;
   iconLeft?: ReactNode;
   search?: boolean;
   autoFocus?: boolean;
+  disabled?: boolean;
 }
 
-export function Input({ value, onChange, placeholder, type = 'text', iconLeft, autoFocus }: InputProps) {
+export function Input({ value, onChange, onKeyDown, placeholder, type = 'text', iconLeft, autoFocus, disabled }: InputProps) {
   return (
     <label style={{
       display: 'flex', alignItems: 'center', gap: 10, height: 'var(--control-h)',
       padding: '0 16px', borderRadius: 'var(--radius-md)', border: '1.5px solid var(--border)',
-      background: 'var(--surface)',
+      background: 'var(--surface)', opacity: disabled ? 0.6 : 1,
     }}>
       {iconLeft && <span style={{ color: 'var(--text-faint)', display: 'grid' }}>{iconLeft}</span>}
       <input
-        value={value} onChange={onChange} placeholder={placeholder} type={type} autoFocus={autoFocus}
+        value={value} onChange={onChange} onKeyDown={onKeyDown} placeholder={placeholder} type={type} autoFocus={autoFocus} disabled={disabled}
         style={{
           flex: 1, border: 'none', outline: 'none', background: 'transparent',
           fontFamily: 'var(--font-body)', fontSize: 'var(--text-md)', fontWeight: 600, color: 'var(--text-strong)',
