@@ -24,7 +24,10 @@ export const STRIPE_LINKS = {
 /** Send the parent to Stripe checkout for the chosen plan. */
 export function goToCheckout(plan: 'annual' | 'monthly') {
   const url = plan === 'annual' ? STRIPE_LINKS.annual : STRIPE_LINKS.monthly;
-  if (url) window.location.href = url;
+  if (!url) return;
+  // Brief delay so the InitiateCheckout pixel beacon fires before we navigate
+  // away to Stripe (an instant redirect can cut the browser event off).
+  setTimeout(() => { window.location.href = url; }, 350);
 }
 export const MAX_CHILDREN_PREMIUM = 3;
 export const MAX_CHILDREN_FREE = 1;
