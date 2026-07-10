@@ -31,9 +31,14 @@ export function BottomNav({ active, onChange }: BottomNavProps) {
         // above the nav) painting above the momentum-scrolling content layer,
         // so its top never gets clipped while scrolling.
         position: 'relative', zIndex: 20,
-        height: 'var(--nav-h)', flex: 'none', background: '#fff',
+        // border-box + the iOS home-indicator inset would otherwise eat into the
+        // 76px and squish the buttons in the installed (standalone) app. Add the
+        // inset to the height so the bar's content always keeps its full --nav-h
+        // and the safe area becomes extra space below.
+        height: 'calc(var(--nav-h) + env(safe-area-inset-bottom, 0px))',
+        flex: 'none', background: '#fff',
         borderTop: `2.5px solid ${INK}`, display: 'flex',
-        paddingBottom: 'env(safe-area-inset-bottom, 0)',
+        paddingBottom: 'env(safe-area-inset-bottom, 0px)',
       }}
     >
       {NAV_TABS.map((tab) => {
