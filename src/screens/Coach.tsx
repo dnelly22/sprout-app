@@ -139,7 +139,7 @@ export function Coach() {
         <IconButton variant="ghost" label="About the coach" onClick={() => setScopeOpen(true)}><Icon name="info" size={22} /></IconButton>
       </div>
 
-      <div ref={endRef} style={{ flex: 1, overflowY: 'auto', padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <div ref={endRef} style={{ flex: 1, overflowY: 'auto', overscrollBehavior: 'contain', padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 12 }}>
         <div style={{ display: 'flex', justifyContent: 'center' }}>
           <Badge tone="coach"><Icon name="shield-check" size={13} /> Educational, not professional advice</Badge>
         </div>

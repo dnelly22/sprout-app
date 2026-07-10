@@ -120,7 +120,7 @@ export function LessonDetail() {
       </div>
 
       {/* content */}
-      <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: '2px 20px 16px' }}>
+      <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', overscrollBehavior: 'contain', padding: '2px 20px 16px' }}>
         <div style={{ display: 'flex', gap: 13, alignItems: 'center', margin: '12px 0 16px' }}>
           <span style={{ width: 54, height: 54, borderRadius: 15, background: headColor, border: `2.5px solid ${INK}`, display: 'grid', placeItems: 'center', flex: 'none', boxShadow: '3px 3px 0 rgba(42,37,33,.7)' }}>
             <Icon name={step.icon} size={25} color="#fff" />

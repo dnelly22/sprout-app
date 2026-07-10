@@ -190,7 +190,7 @@ export function Sheet({ open, onClose, title, children }: SheetProps) {
         onClick={(e) => e.stopPropagation()}
         style={{
           width: '100%', background: 'var(--surface)', borderRadius: 'var(--radius-xl) var(--radius-xl) 0 0',
-          padding: '10px 20px 24px', boxShadow: 'var(--shadow-pop)', maxHeight: '82%', overflowY: 'auto',
+          padding: '10px 20px 24px', boxShadow: 'var(--shadow-pop)', maxHeight: '82%', overflowY: 'auto', overscrollBehavior: 'contain',
         }}
       >
         <div style={{ width: 40, height: 4, borderRadius: 999, background: 'var(--border-strong)', margin: '0 auto 14px' }} />

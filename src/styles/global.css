@@ -9,6 +9,10 @@
 
 /* ----- App frame: the design's 430px phone frame IS the viewport in the real app ----- */
 html, body, #root { height: 100%; }
+html, body {
+  /* Kill the iOS document rubber-band bounce that drags fixed bars with a finger. */
+  overscroll-behavior: none;
+}
 body {
   margin: 0;
   background: var(--bg);
@@ -38,6 +42,7 @@ body {
   min-height: 0; /* let it scroll inside the frame instead of growing and shoving the nav off-screen */
   overflow-y: auto;
   overflow-x: hidden;
+  overscroll-behavior: contain; /* keep overscroll inside the scroller — don't bounce the page/nav */
   -webkit-overflow-scrolling: touch;
 }
 .app-scroll::-webkit-scrollbar { display: none; }
