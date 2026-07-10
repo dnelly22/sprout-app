@@ -11,6 +11,7 @@ import { Settings } from './screens/Settings';
 import { Paywall } from './screens/Paywall';
 import { Success } from './screens/Success';
 import { TourProvider } from './components/GuidedTour';
+import { SubscriptionSync } from './components/SubscriptionSync';
 
 // Lazy: the whole Kid Zone screen (and, behind it, the heavy Journey scenario
 // data) becomes its own chunk so the parent-facing initial bundle stays lean.
@@ -22,6 +23,7 @@ const Funnel = lazy(() => import('./funnel/Funnel').then((m) => ({ default: m.Fu
 export default function App() {
   return (
     <TourProvider>
+    <SubscriptionSync />
     <Routes>
       {/* Landing funnel — top-level, OUTSIDE the app frame so it skips the
           onboarding gate and bottom nav. This is the ad's destination URL. */}

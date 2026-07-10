@@ -22,9 +22,12 @@ export const STRIPE_LINKS = {
   annual: 'https://buy.stripe.com/eVqdR8biGfmO6cr7fVcV202',
 } as const;
 /** Send the parent to Stripe checkout for the chosen plan. */
-export function goToCheckout(plan: 'annual' | 'monthly') {
-  const url = plan === 'annual' ? STRIPE_LINKS.annual : STRIPE_LINKS.monthly;
-  if (!url) return;
+export function goToCheckout(plan: 'annual' | 'monthly', email?: string) {
+  const base = plan === 'annual' ? STRIPE_LINKS.annual : STRIPE_LINKS.monthly;
+  if (!base) return;
+  // Prefill the Stripe email so the customer matches the app's parent email —
+  // that's how the installed app later verifies the subscription (api/subscription).
+  const url = email ? `${base}?prefilled_email=${encodeURIComponent(email)}` : base;
   // Brief delay so the InitiateCheckout pixel beacon fires before we navigate
   // away to Stripe (an instant redirect can cut the browser event off).
   setTimeout(() => { window.location.href = url; }, 350);

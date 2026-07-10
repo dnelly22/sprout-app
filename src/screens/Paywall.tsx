@@ -14,7 +14,8 @@ const ADMIN_CODE = 'SPROUT-ADMIN';  // premium + admin tools in Settings
  * Honest framing: clear pricing, visible monthly option, easy cancel language.
  */
 export function Paywall() {
-  const { dispatch } = useApp();
+  const { state, dispatch } = useApp();
+  const [restore, setRestore] = useState<'idle' | 'checking' | 'none'>('idle');
   const plan = usePlan();
   const navigate = useNavigate();
   const [selected, setSelected] = useState<'annual' | 'monthly'>('annual');
@@ -33,7 +34,21 @@ export function Paywall() {
       value: isAnnual ? 99 : 14.99,
       currency: 'USD',
     });
-    goToCheckout(selected); // → Stripe; on success it redirects to /success?session_id=…
+    goToCheckout(selected, state.parent.email); // → Stripe; on success → /success?session_id=…
+  };
+
+  // "Already paid?" — verify the subscription with Stripe by email and unlock.
+  const restoreAccess = () => {
+    const email = state.parent.email?.trim();
+    if (!email) { setRestore('none'); return; }
+    setRestore('checking');
+    fetch(`/api/subscription?email=${encodeURIComponent(email)}`)
+      .then((r) => r.json())
+      .then((d: { premium?: boolean }) => {
+        if (d?.premium) { dispatch({ type: 'updateSettings', patch: { plan: 'premium' } }); navigate('/today', { replace: true }); }
+        else setRestore('none');
+      })
+      .catch(() => setRestore('none'));
   };
 
   const redeem = () => {
@@ -109,6 +124,14 @@ export function Paywall() {
             <button onClick={() => navigate(-1)} style={{ display: 'block', margin: '12px auto 0', border: 'none', background: 'none', fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 13, color: 'var(--ink-400)', cursor: 'pointer' }}>
               Maybe Later
             </button>
+            <button onClick={restoreAccess} disabled={restore === 'checking'} style={{ display: 'block', margin: '6px auto 0', border: 'none', background: 'none', fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 12.5, color: 'var(--grape-600)', cursor: 'pointer' }}>
+              {restore === 'checking' ? 'Checking…' : 'Already paid? Restore access'}
+            </button>
+            {restore === 'none' && (
+              <div style={{ textAlign: 'center', fontSize: 12, fontWeight: 700, color: 'var(--ink-400)', marginTop: 4 }}>
+                No active subscription found for {state.parent.email || 'your account'}.
+              </div>
+            )}
           </div>
         </>
       )}
