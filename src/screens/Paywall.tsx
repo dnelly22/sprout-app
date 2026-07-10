@@ -3,12 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { useApp } from '../store/AppStore';
 import { Icon, Input } from '../components/ds';
 import { popBg, PopCard, PopButton, INK, GRAPE } from '../components/pop';
-import { usePlan, PRICE } from '../engine/plan';
+import { usePlan, PRICE, goToCheckout } from '../engine/plan';
 import { track, trackOnce } from '../analytics';
 
-/* Live Stripe Payment Links. */
-const STRIPE_MONTHLY = 'https://buy.stripe.com/eVq5kCeuS2A2gR5gQvcV201'; // $15/mo
-const STRIPE_ANNUAL = 'https://buy.stripe.com/eVqdR8biGfmO6cr7fVcV202';  // $99/yr
 const UNLOCK_CODE = 'SPROUT-FAM';   // family & friends → premium
 const ADMIN_CODE = 'SPROUT-ADMIN';  // premium + admin tools in Settings
 
@@ -32,9 +29,7 @@ export function Paywall() {
     const value = selected === 'annual' ? 99 : 14.99;
     trackOnce('start_trial', 'StartTrial', { plan: selected, value, currency: 'USD', predicted_ltv: 99 });
     track('InitiateCheckout', { plan: selected, value, currency: 'USD' });
-    const url = selected === 'annual' ? STRIPE_ANNUAL : STRIPE_MONTHLY;
-    if (url) window.location.href = url;
-    else codeRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    goToCheckout(selected);
   };
 
   const redeem = () => {

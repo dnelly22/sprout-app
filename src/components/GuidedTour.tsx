@@ -34,7 +34,7 @@ export function TourProvider({ children }: { children: ReactNode }) {
   const [i, setI] = useState(-1); // -1 = inactive
   const [rect, setRect] = useState<DOMRect | null>(null);
 
-  const blocked = ['/onboarding', '/start'].some((p) => loc.pathname.startsWith(p));
+  const blocked = ['/onboarding', '/start', '/plans'].some((p) => loc.pathname.startsWith(p));
   const eligible = state.onboarded && !state.settings.tourDone && !blocked;
 
   // Auto-start once, when they first land in the app after onboarding.

@@ -5,7 +5,6 @@ import { Icon } from '../../components/ds';
 import { Mascot } from '../kidzone/Mascot';
 import { PARENT_POWERS } from '../../data/quiz';
 import { AREAS, areaKidWorld, emptyAreaScores, type AreaKey } from '../../constants/areas';
-import { trackOnce } from '../../analytics';
 import type { Child, Goal } from '../../types';
 
 /*
@@ -165,20 +164,23 @@ export function Onboarding() {
   const parentTrack = funnelUser ? (intake?.parentTrack || 'When They Won’t Open Up') : PARENT_FOCUS[a4 >= 0 ? a4 : 0].track;
   const power = PARENT_POWERS[a1 >= 0 ? Math.min(a1, PARENT_POWERS.length - 1) : 1];
 
-  const finish = (plan: 'trial' | 'free') => {
+  const finish = (action: 'trial' | 'free') => {
     const goalId = `goal-${Date.now()}`;
     const child = makeChild(draft, goalId);
     const goal: Goal = {
       id: goalId, childId: child.id, area: childArea,
       statement: `Help ${child.name} ${childGoal}`, status: 'active',
     };
-    if (plan === 'trial') trackOnce('start_trial', 'StartTrial', { via: 'onboarding', currency: 'USD', predicted_ltv: 99 });
-    dispatch({ type: 'updateSettings', patch: plan === 'trial' ? { plan: 'trial', trialStart: Date.now() } : { plan: 'free' } });
+    // Everyone finishes onboarding on the FREE (limited) plan. The full app is
+    // unlocked by starting the 7-day trial, which takes a card via Stripe on the
+    // paywall — so "Start Free Trial" routes there; "Maybe later" enters free.
+    dispatch({ type: 'updateSettings', patch: { plan: 'free' } });
     dispatch({ type: 'completeOnboarding', parent: { name: parentName.trim(), email: email.trim(), consentGiven: true, type: power.type }, child, goal });
     dispatch({ type: 'updateSettings', patch: { notifications: allowNotifs } });
     dispatch({ type: 'awardStars', childId: child.id, stars: 10 });
     dispatch({ type: 'recommendArea', childId: child.id, area: childArea });
-    navigate('/today', { replace: true });
+    if (action === 'trial') navigate('/plans');
+    else navigate('/today', { replace: true });
   };
 
   const showHeader = screen !== 'hook';

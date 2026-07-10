@@ -11,6 +11,21 @@ import { useApp, type Settings } from '../store/AppStore';
 
 export const TRIAL_DAYS = 7;
 export const PRICE = { monthly: '$14.99', annual: '$99', annualPerMonth: '$8.25', save: '45%' } as const;
+
+/**
+ * Live Stripe Payment Links (card upfront; Stripe runs the 7-day trial).
+ * On success Stripe should redirect back to the app with ?upgraded=1&plan=…
+ * so it unlocks Premium (see App.tsx).
+ */
+export const STRIPE_LINKS = {
+  monthly: 'https://buy.stripe.com/eVq5kCeuS2A2gR5gQvcV201',
+  annual: 'https://buy.stripe.com/eVqdR8biGfmO6cr7fVcV202',
+} as const;
+/** Send the parent to Stripe checkout for the chosen plan. */
+export function goToCheckout(plan: 'annual' | 'monthly') {
+  const url = plan === 'annual' ? STRIPE_LINKS.annual : STRIPE_LINKS.monthly;
+  if (url) window.location.href = url;
+}
 export const MAX_CHILDREN_PREMIUM = 3;
 export const MAX_CHILDREN_FREE = 1;
 

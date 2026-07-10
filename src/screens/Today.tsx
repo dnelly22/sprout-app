@@ -82,7 +82,7 @@ export function Today() {
             <span style={{ flex: 1, fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 13, color: INK }}>
               {plan.tier === 'trial' ? `${plan.trialDaysLeft} day${plan.trialDaysLeft === 1 ? '' : 's'} left in your free trial`
                 : plan.trialExpired ? 'Your free trial has ended'
-                : 'You’re on the free preview'}
+                : 'Free preview — start your 7-day free trial'}
             </span>
             <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 12, color: 'var(--grape-600)' }}>See plans →</span>
           </PopCard>
