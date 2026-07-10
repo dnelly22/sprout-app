@@ -23,13 +23,17 @@ export function Paywall() {
   const codeRef = useRef<HTMLDivElement>(null);
 
   const startTrial = () => {
-    // Card upfront: go straight to Stripe checkout for the chosen plan. Stripe
-    // collects the card, runs the 7-day trial, and auto-charges on day 8. On
-    // success it redirects back to the app (?upgraded=1) which unlocks Premium.
-    const value = selected === 'annual' ? 99 : 14.99;
-    trackOnce('start_trial', 'StartTrial', { plan: selected, value, currency: 'USD', predicted_ltv: 99 });
-    track('InitiateCheckout', { plan: selected, value, currency: 'USD' });
-    goToCheckout(selected);
+    // Begin checkout (browser + CAPI, deduped). StartTrial/Purchase fire later,
+    // server-side, from the Stripe webhook + /success page (see api/stripe-webhook).
+    const isAnnual = selected === 'annual';
+    track('InitiateCheckout', {
+      content_name: isAnnual ? 'Annual Plan' : 'Monthly Plan',
+      content_category: 'subscription',
+      content_ids: [selected],
+      value: isAnnual ? 99 : 14.99,
+      currency: 'USD',
+    });
+    goToCheckout(selected); // → Stripe; on success it redirects to /success?session_id=…
   };
 
   const redeem = () => {
@@ -39,8 +43,8 @@ export function Paywall() {
       setCodeMsg('admin');
     } else if (c === UNLOCK_CODE) {
       dispatch({ type: 'updateSettings', patch: { plan: 'premium' } });
-      // A redeemed unlock code = a real activation (not an admin/dev unlock).
-      trackOnce('subscribe', 'Subscribe', { via: 'unlock_code', currency: 'USD', value: 0 });
+      // Comp'd unlock — a custom event so it never pollutes real StartTrial/Purchase.
+      trackOnce('unlock_code', 'UnlockCode', { via: 'unlock_code' }, true);
       setCodeMsg('ok');
     } else setCodeMsg('bad');
   };

@@ -76,6 +76,17 @@ export function track(event: string, params?: Params) { fire('track', event, par
 /** Custom (non-standard) Meta events, e.g. AddToHomeScreen. */
 export function trackCustom(event: string, params?: Params) { fire('trackCustom', event, params); }
 
+/**
+ * Browser-pixel-only event with a caller-supplied event_id — used on the Stripe
+ * success page so it dedupes against the server (webhook → CAPI) event that
+ * carries the same id. No CAPI call here: the server side is the webhook's job.
+ */
+export function trackBrowser(event: string, params: Params, eventId: string) {
+  const f = fbq();
+  if (f) { try { f('track', event, params, { eventID: eventId }); } catch { /* ignore */ } }
+  if (import.meta.env.DEV) console.log(`%c[pixel:browser] ` + event, 'color:#7A5AD9;font-weight:bold', params, eventId);
+}
+
 /** Fire an event at most once per device (dedupes install / trial / subscribe on relaunch). */
 export function trackOnce(key: string, event: string, params?: Params, custom = false) {
   const flag = 'evt_' + key;
