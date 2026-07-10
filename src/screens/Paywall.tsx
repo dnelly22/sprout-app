@@ -6,9 +6,9 @@ import { popBg, PopCard, PopButton, INK, GRAPE } from '../components/pop';
 import { usePlan, PRICE } from '../engine/plan';
 import { track, trackOnce } from '../analytics';
 
-/* Point these at real Stripe Payment Links before charging anyone. */
-const STRIPE_MONTHLY = '';
-const STRIPE_ANNUAL = '';
+/* Live Stripe Payment Links. */
+const STRIPE_MONTHLY = 'https://buy.stripe.com/eVq5kCeuS2A2gR5gQvcV201'; // $15/mo
+const STRIPE_ANNUAL = 'https://buy.stripe.com/eVqdR8biGfmO6cr7fVcV202';  // $99/yr
 const UNLOCK_CODE = 'SPROUT-FAM';   // family & friends → premium
 const ADMIN_CODE = 'SPROUT-ADMIN';  // premium + admin tools in Settings
 
