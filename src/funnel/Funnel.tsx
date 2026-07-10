@@ -7,6 +7,7 @@ import {
 import {
   detectEnv, resolveEnv, track, trackCustom, trackOnce, captureClickId, KID_MAP, KID_DESC, PARENT_MAP, STATE_KEY, INTAKE_KEY, type Env,
 } from './env';
+import { isDesktop } from '../device';
 
 /* ---- ad creatives (set per ad via ?angle=freeze|meltdown|hangback) ---- */
 const AD_ANGLES: Record<string, Creative> = {
@@ -85,6 +86,7 @@ export function Funnel() {
 
   const detected = useRef<Env>(detectEnv()).current;
   const effEnv = resolveEnv(detected);
+  const desktop = useRef(isDesktop()).current; // computer → "scan to get it on your phone" at install
   const deferredPrompt = useRef<{ prompt?: () => void } | null>(null);
 
   const primProblem = q1[0] || 'freeze';
@@ -196,7 +198,7 @@ export function Funnel() {
       </div>
       {sheet && (
         <InstallSheet
-          env={detected === 'installed' ? 'installed' : effEnv}
+          env={detected === 'installed' ? 'installed' : desktop ? 'desktop' : effEnv}
           installed={installed}
           onClose={() => setSheet(false)}
           onAndroidInstall={androidInstall}

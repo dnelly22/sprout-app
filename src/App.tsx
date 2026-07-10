@@ -11,7 +11,6 @@ import { Settings } from './screens/Settings';
 import { Paywall } from './screens/Paywall';
 import { Success } from './screens/Success';
 import { TourProvider } from './components/GuidedTour';
-import { DesktopGate } from './components/DesktopGate';
 
 // Lazy: the whole Kid Zone screen (and, behind it, the heavy Journey scenario
 // data) becomes its own chunk so the parent-facing initial bundle stays lean.
@@ -22,7 +21,6 @@ const Funnel = lazy(() => import('./funnel/Funnel').then((m) => ({ default: m.Fu
 
 export default function App() {
   return (
-    <DesktopGate>
     <TourProvider>
     <Routes>
       {/* Landing funnel — top-level, OUTSIDE the app frame so it skips the
@@ -45,6 +43,5 @@ export default function App() {
       </Route>
     </Routes>
     </TourProvider>
-    </DesktopGate>
   );
 }

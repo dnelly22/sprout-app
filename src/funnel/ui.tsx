@@ -1,6 +1,7 @@
 /* Landing funnel — Comic Pop UI primitives + beat screens (presentational).
    Ported from design_handoff_funnel_v2 (ships default variants only). */
 import type { ReactNode } from 'react';
+import { QRCodeSVG } from 'qrcode.react';
 
 const A = '/assets/funnel';
 const INK = 'var(--ink-900)';
@@ -374,15 +375,16 @@ function StepBox({ n, children, label }: { n: number; children: ReactNode; label
   );
 }
 export function InstallSheet({ env, onClose, onAndroidInstall, installed }: {
-  env: 'ios' | 'android' | 'inapp' | 'installed'; onClose: () => void; onAndroidInstall: () => void; installed: boolean;
+  env: 'ios' | 'android' | 'inapp' | 'installed' | 'desktop'; onClose: () => void; onAndroidInstall: () => void; installed: boolean;
 }) {
   const done = installed || env === 'installed';
-  const titles = { ios: 'Make Sprout one tap away', android: 'Make Sprout one tap away', inapp: 'Almost — one quick step', installed: 'You’re all set 🎉' };
+  const titles = { ios: 'Make Sprout one tap away', android: 'Make Sprout one tap away', inapp: 'Almost — one quick step', installed: 'You’re all set 🎉', desktop: 'Get Sprout on your phone' };
   const subs = {
     ios: 'Add it to your home screen so it opens like a real app — full screen, works offline.',
     android: 'Add it to your home screen so it opens like a real app — full screen, works offline.',
     inapp: 'You’re in an in-app browser, which can’t install apps. Open Sprout in your real browser first — your plan comes with you.',
     installed: 'Sprout is on your home screen. Your plan for the whole family is loaded and ready.',
+    desktop: 'Sprout works best on a phone or tablet. Point your phone camera at this code to open it there and add it to your home screen.',
   };
   let body: ReactNode;
   if (done) {
@@ -399,6 +401,20 @@ export function InstallSheet({ env, onClose, onAndroidInstall, installed }: {
         <StepBox n={1} label="Tap Share"><Ico name="share" size={22} color="var(--sky-500)" /></StepBox>
         <StepBox n={2} label="Add to Home Screen"><Ico name="add" size={22} color="var(--grape-600)" /></StepBox>
         <StepBox n={3} label={'Tap “Add”'}><span style={{ fontWeight: 800, fontSize: 14, color: 'var(--sky-500)' }}>Add</span></StepBox>
+      </div>
+    );
+  } else if (env === 'desktop') {
+    const href = typeof window !== 'undefined' ? window.location.href : 'https://sprout-app-bice.vercel.app/start';
+    const pretty = typeof window !== 'undefined' ? (window.location.host + window.location.pathname).replace(/\/$/, '') : 'sprout-app-bice.vercel.app';
+    body = (
+      <div style={{ margin: '10px 0 14px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
+        <div style={{ background: '#fff', border: '2.5px solid var(--ink-900)', borderRadius: 20, boxShadow: CP.grape, padding: 15 }}>
+          <QRCodeSVG value={href} size={172} bgColor="#ffffff" fgColor={INK} level="M" />
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+          <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 12.5, color: 'var(--ink-500)' }}>or visit</span>
+          <span style={{ background: '#fff', border: '2px solid var(--ink-900)', borderRadius: 99, padding: '4px 11px', fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 12.5, color: INK }}>{pretty}</span>
+        </div>
       </div>
     );
   } else if (env === 'android') {
@@ -433,7 +449,7 @@ export function InstallSheet({ env, onClose, onAndroidInstall, installed }: {
         <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 8 }}><span style={{ width: 46, height: 5, borderRadius: 999, background: 'var(--ink-400)', opacity: .6 }} /></div>
         <img src={`${A}/sprout-cut.webp`} alt="Sprout" style={{ position: 'absolute', top: -56, right: 22, width: 80, height: 80, objectFit: 'contain', filter: 'drop-shadow(2px 4px 0 rgba(42,37,33,.18))' }} />
         <button onClick={onClose} aria-label="Close" style={{ position: 'absolute', top: 14, right: 16, width: 30, height: 30, borderRadius: '50%', border: '2px solid var(--ink-900)', background: '#fff', cursor: 'pointer', display: 'grid', placeItems: 'center', padding: 0 }}><Ico name="x" size={15} /></button>
-        {!done && <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 11, letterSpacing: '.08em', color: 'var(--coral-600)' }}>{env === 'inapp' ? 'ONE MORE STEP' : 'ADD TO HOME SCREEN'}</div>}
+        {!done && <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 11, letterSpacing: '.08em', color: 'var(--coral-600)' }}>{env === 'inapp' ? 'ONE MORE STEP' : env === 'desktop' ? 'SCAN TO GET THE APP' : 'ADD TO HOME SCREEN'}</div>}
         <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 23, color: INK, margin: '5px 0 7px', maxWidth: 260, lineHeight: 1.12 }}>{titles[key]}</h2>
         <p style={{ fontSize: 13.5, fontWeight: 500, color: 'var(--ink-500)', lineHeight: 1.5, margin: '0 0 4px' }}>{subs[key]}</p>
         {body}
