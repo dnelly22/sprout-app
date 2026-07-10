@@ -7,6 +7,7 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
+      injectRegister: false, // registered manually in src/pwa.ts (adds update-on-focus polling)
       includeAssets: ['favicon.svg'],
       workbox: {
         // Music files are large (~7MB each) — don't precache them; cache on first
