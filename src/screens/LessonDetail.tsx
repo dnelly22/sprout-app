@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useApp } from '../store/AppStore';
-import { usePlan, FREE_LESSON_INDEX } from '../engine/plan';
+import { usePlan, freeLessonIds } from '../engine/plan';
 import { lessonCategory, lessonContentById, situationCategory } from '../data/lessons';
 import { fillTpl } from '../utils/fillTpl';
 import { areaParentLabel } from '../constants/areas';
@@ -26,13 +26,13 @@ export function LessonDetail() {
   const { state, activeChild, dispatch } = useApp();
   const plan = usePlan();
   const content = lessonContentById(id);
-  const freeId = state.lessons[FREE_LESSON_INDEX]?.id;
+  const freeIds = useMemo(() => freeLessonIds(state.lessons), [state.lessons]);
   const row = state.lessons.find((l) => l.id === id);
   const fill = (s: string) => fillTpl(s, activeChild);
 
   useEffect(() => {
-    if (!plan.isPremium && id !== freeId) navigate('/plans', { replace: true });
-  }, [plan.isPremium, id, freeId, navigate]);
+    if (!plan.isPremium && !freeIds.includes(id)) navigate('/plans', { replace: true });
+  }, [plan.isPremium, id, freeIds, navigate]);
   useEffect(() => {
     if (row && row.status === 'new') dispatch({ type: 'setLessonStatus', id, status: 'in-progress', progress: 10 });
   }, [id, row, dispatch]);

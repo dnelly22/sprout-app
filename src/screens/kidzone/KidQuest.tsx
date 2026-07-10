@@ -1,5 +1,6 @@
 import { useApp } from '../../store/AppStore';
 import { useChildEconomy } from '../../engine/selectors';
+import { usePlan } from '../../engine/plan';
 import { Icon } from '../../components/ds';
 import { INK, SectionHead } from '../../components/pop';
 import { REWARD, BOSS, LEVELS } from '../../engine/economy';
@@ -22,6 +23,8 @@ export function KidQuest({ child, onPlay, onOpenJourney, onBoss }: {
 }) {
   const { dispatch } = useApp();
   const eco = useChildEconomy(child.id);
+  const plan = usePlan();
+  const gamesLocked = !plan.isPremium; // free tier: Quick Fire & Say It are Premium
 
   // level progress (stars within the current level band)
   const lvl = eco.level;
@@ -80,7 +83,12 @@ export function KidQuest({ child, onPlay, onOpenJourney, onBoss }: {
             ['Quick Fire', 'zap', 'var(--sky-500)', '#E7F2FB', 'Fast rounds', () => onPlay('quickfire'), -0.5],
             ['Say It Out Loud', 'mic', 'var(--green-500)', 'var(--green-100)', 'Say it aloud', () => onPlay('sayit'), 0.5],
           ] as const).map(([label, icon, fc, tint, desc, go, tilt]) => (
-            <button key={label} onClick={() => { sfx('pop'); go(); }} style={{ textAlign: 'left', cursor: 'pointer', background: tint, border: `2.5px solid ${INK}`, borderRadius: 18, boxShadow: '3px 4px 0 var(--grape-300)', padding: 14, transform: `rotate(${tilt}deg)` }}>
+            <button key={label} onClick={() => { sfx('pop'); go(); }} style={{ position: 'relative', textAlign: 'left', cursor: 'pointer', background: tint, border: `2.5px solid ${INK}`, borderRadius: 18, boxShadow: '3px 4px 0 var(--grape-300)', padding: 14, transform: `rotate(${tilt}deg)`, opacity: gamesLocked ? 0.92 : 1 }}>
+              {gamesLocked && (
+                <span style={{ position: 'absolute', top: 8, right: 8, display: 'inline-flex', alignItems: 'center', gap: 3, background: '#fff', border: `2px solid ${INK}`, borderRadius: 99, padding: '2px 7px', fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 8.5, color: 'var(--grape-600)' }}>
+                  <Icon name="lock" size={9} color="var(--grape-600)" />PREMIUM
+                </span>
+              )}
               <span style={{ display: 'inline-grid', placeItems: 'center', width: 48, height: 48, borderRadius: 14, background: fc, border: `2.5px solid ${INK}`, boxShadow: '2px 2px 0 rgba(42,37,33,.5)' }}>
                 <Icon name={icon} size={23} color="#fff" />
               </span>

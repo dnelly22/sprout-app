@@ -44,11 +44,10 @@ export function KidZone() {
   const [wrong, setWrong] = useState(false);
   const [journeyArea, setJourneyArea] = useState<AreaKey | null>(null);
 
-  // Free plan: one Quick Fire + one Say It Out Loud sample, one Journey story.
-  // A premium lock inside Kid Zone always shows the Parent Check first.
-  const played = (kind: string) => state.activity.some((e) => e.childId === child.id && e.kind === kind);
+  // Free plan opens only the one Journey sample — Quick Fire and Say It Out Loud
+  // are Premium. A premium lock inside Kid Zone always shows the Parent Check first.
   const tryPlay = (g: GameKind) => {
-    if (!plan.isPremium && played(g === 'quickfire' ? 'quickfire' : 'sayit')) setParentGate(true);
+    if (!plan.isPremium && (g === 'quickfire' || g === 'sayit')) setParentGate(true);
     else setGame(g);
   };
 

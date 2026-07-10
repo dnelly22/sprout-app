@@ -5,7 +5,7 @@ import { Icon, Input } from '../components/ds';
 import { popBg, PopCard, SectionHead, InkBar, ArrowCoin, INK, GRAPE } from '../components/pop';
 import { AREAS, type AreaKey } from '../constants/areas';
 import { SITUATION_CATEGORIES, lessonVisual } from '../data/lessons';
-import { usePlan, FREE_LESSON_INDEX } from '../engine/plan';
+import { usePlan, freeLessonIds } from '../engine/plan';
 import type { Lesson, LessonShelf } from '../types';
 
 /**
@@ -17,8 +17,8 @@ export function Lessons() {
   const { state, activeChild } = useApp();
   const navigate = useNavigate();
   const plan = usePlan();
-  const freeId = state.lessons[FREE_LESSON_INDEX]?.id;
-  const isLocked = (id: string) => !plan.isPremium && id !== freeId;
+  const freeIds = useMemo(() => freeLessonIds(state.lessons), [state.lessons]);
+  const isLocked = (id: string) => !plan.isPremium && !freeIds.includes(id);
   const [mode, setMode] = useState<'dash' | 'library'>('dash');
   const [shelf, setShelf] = useState<LessonShelf>('talking');
   const [filter, setFilter] = useState<string>('all');

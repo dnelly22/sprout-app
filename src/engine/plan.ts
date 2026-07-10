@@ -35,9 +35,19 @@ export function goToCheckout(plan: 'annual' | 'monthly', email?: string) {
 export const MAX_CHILDREN_PREMIUM = 3;
 export const MAX_CHILDREN_FREE = 1;
 
-/** Free-plan preview content. */
+/**
+ * Free-plan preview content. The free tier opens exactly:
+ *  - one Journey story (FREE_SCENARIO_ID) — Quick Fire & Say It stay locked;
+ *  - one "Talking with …" lesson + one "Your situations" lesson (freeLessonIds).
+ * Everything else shows PREMIUM.
+ */
 export const FREE_SCENARIO_ID = 'friends-01';
-export const FREE_LESSON_INDEX = 0; // first lesson in the library list
+
+/** The one free lesson on each shelf: the first "talking" and first "situations". */
+export function freeLessonIds(lessons: { id: string; shelf: 'talking' | 'situations' }[]): string[] {
+  const first = (shelf: 'talking' | 'situations') => lessons.find((l) => l.shelf === shelf)?.id;
+  return [first('talking'), first('situations')].filter(Boolean) as string[];
+}
 
 export type PlanTier = 'free' | 'trial' | 'premium';
 
