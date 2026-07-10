@@ -39,15 +39,14 @@ export function KidZone() {
   const [game, setGame] = useState<GameKind | null>(null);
   const [boss, setBoss] = useState(false);
   const [gate, setGate] = useState(false);
-  const [parentGate, setParentGate] = useState(false);
   const [pin, setPin] = useState('');
   const [wrong, setWrong] = useState(false);
   const [journeyArea, setJourneyArea] = useState<AreaKey | null>(null);
 
   // Free plan opens only the one Journey sample — Quick Fire and Say It Out Loud
-  // are Premium. A premium lock inside Kid Zone always shows the Parent Check first.
+  // are Premium. Tapping a locked game jumps straight to the upgrade screen.
   const tryPlay = (g: GameKind) => {
-    if (!plan.isPremium && (g === 'quickfire' || g === 'sayit')) setParentGate(true);
+    if (!plan.isPremium && (g === 'quickfire' || g === 'sayit')) navigate('/plans');
     else setGame(g);
   };
 
@@ -95,7 +94,7 @@ export function KidZone() {
             color={areaColor(journeyArea)}
             freeScenarioId={plan.isPremium ? null : FREE_SCENARIO_ID}
             autoOpenId={tour.active && tour.stepId === 'kid-journey' ? FREE_SCENARIO_ID : null}
-            onLocked={() => setParentGate(true)}
+            onLocked={() => navigate('/plans')}
             onExit={() => setJourneyArea(null)}
           />
         </Suspense>
@@ -174,50 +173,8 @@ export function KidZone() {
   return (
     <>
       {content}
-      <ParentGateSheet open={parentGate} onClose={() => setParentGate(false)} onPass={() => { setParentGate(false); navigate('/plans'); }} />
       <CelebrationOverlay />
     </>
-  );
-}
-
-/**
- * Parent Check before any purchase screen reachable from Kid Zone:
- * hold the button for 3 seconds (a child-resistant adult confirmation).
- */
-function ParentGateSheet({ open, onClose, onPass }: { open: boolean; onClose: () => void; onPass: () => void }) {
-  const [holding, setHolding] = useState(false);
-  const [progress, setProgress] = useState(0);
-  const timer = useRef<number | undefined>(undefined);
-
-  const start = () => {
-    setHolding(true);
-    const t0 = Date.now();
-    timer.current = window.setInterval(() => {
-      const p = Math.min(1, (Date.now() - t0) / 3000);
-      setProgress(p);
-      if (p >= 1) { window.clearInterval(timer.current); setHolding(false); setProgress(0); onPass(); }
-    }, 50);
-  };
-  const stop = () => { window.clearInterval(timer.current); setHolding(false); setProgress(0); };
-
-  return (
-    <Sheet open={open} onClose={onClose} title="Parent Check 🔒">
-      <p style={{ marginTop: -6, marginBottom: 6, color: 'var(--text-muted)', textAlign: 'center', fontWeight: 700 }}>
-        This part is for grown-ups. Ask your parent to continue.
-      </p>
-      <p style={{ margin: '0 0 16px', color: 'var(--ink-400)', textAlign: 'center', fontWeight: 700, fontSize: 12.5 }}>
-        Parents: press and hold for 3 seconds.
-      </p>
-      <button
-        onPointerDown={start}
-        onPointerUp={stop}
-        onPointerLeave={stop}
-        style={{ position: 'relative', width: '100%', minHeight: 54, border: `2.5px solid ${INK}`, borderRadius: 99, background: '#fff', overflow: 'hidden', cursor: 'pointer', fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 15, color: INK }}
-      >
-        <span style={{ position: 'absolute', inset: 0, width: `${progress * 100}%`, background: 'var(--grape-100)', transition: holding ? 'none' : 'width .2s' }} />
-        <span style={{ position: 'relative' }}>{holding ? 'Keep holding…' : 'Hold to continue'}</span>
-      </button>
-    </Sheet>
   );
 }
 

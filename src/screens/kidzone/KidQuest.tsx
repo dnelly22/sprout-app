@@ -1,6 +1,8 @@
 import { useApp } from '../../store/AppStore';
 import { useChildEconomy } from '../../engine/selectors';
-import { usePlan } from '../../engine/plan';
+import { usePlan, FREE_SCENARIO_ID } from '../../engine/plan';
+import { JOURNEY_TO_AREA } from '../../data/journey';
+import type { JourneyArea } from '../../types/journey';
 import { Icon } from '../../components/ds';
 import { INK, SectionHead } from '../../components/pop';
 import { REWARD, BOSS, LEVELS } from '../../engine/economy';
@@ -25,6 +27,11 @@ export function KidQuest({ child, onPlay, onOpenJourney, onBoss }: {
   const eco = useChildEconomy(child.id);
   const plan = usePlan();
   const gamesLocked = !plan.isPremium; // free tier: Quick Fire & Say It are Premium
+  // Free tier has just the one free Journey scenario unlocked — point the big
+  // Journey button at the world that actually contains it so it's playable
+  // (otherwise a free kid lands in a world where everything is locked).
+  const freeJourneyArea = JOURNEY_TO_AREA[FREE_SCENARIO_ID.split('-')[0] as JourneyArea];
+  const journeyStart = plan.isPremium ? eco.currentJourney : (freeJourneyArea ?? eco.currentJourney);
 
   // level progress (stars within the current level band)
   const lvl = eco.level;
@@ -35,7 +42,7 @@ export function KidQuest({ child, onPlay, onOpenJourney, onBoss }: {
   const startQuest = () => {
     sfx('pop');
     switch (eco.quest.def.kind) {
-      case 'journey': onOpenJourney(eco.currentJourney); break;
+      case 'journey': onOpenJourney(journeyStart); break;
       case 'quickfire2': onPlay('quickfire'); break;
       case 'sayit': onPlay('sayit'); break;
       case 'realworld': document.getElementById('rwc-card')?.scrollIntoView({ behavior: 'smooth', block: 'center' }); break;
@@ -68,7 +75,7 @@ export function KidQuest({ child, onPlay, onOpenJourney, onBoss }: {
       {/* pick a game — big Journey hero + 2 tiles */}
       <div data-tour="kid-games" style={{ padding: '18px 20px 0' }}>
         <SectionHead icon="dices" tint="#E7F2FB">Pick a game</SectionHead>
-        <button onClick={() => { sfx('pop'); onOpenJourney(eco.currentJourney); }} style={{ position: 'relative', overflow: 'hidden', width: '100%', textAlign: 'left', cursor: 'pointer', background: 'linear-gradient(140deg, var(--grape-400), var(--grape-600))', border: `2.5px solid ${INK}`, borderRadius: 22, boxShadow: '5px 6px 0 rgba(42,37,33,.85)', padding: 18, color: '#fff' }}>
+        <button onClick={() => { sfx('pop'); onOpenJourney(journeyStart); }} style={{ position: 'relative', overflow: 'hidden', width: '100%', textAlign: 'left', cursor: 'pointer', background: 'linear-gradient(140deg, var(--grape-400), var(--grape-600))', border: `2.5px solid ${INK}`, borderRadius: 22, boxShadow: '5px 6px 0 rgba(42,37,33,.85)', padding: 18, color: '#fff' }}>
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'rgba(255,255,255,.2)', border: '2px solid rgba(255,255,255,.5)', color: '#fff', fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 10.5, letterSpacing: '.05em', padding: '3px 10px', borderRadius: 99 }}>
             <Icon name="gamepad-2" size={12} color="#fff" />STORY MODE
           </span>
