@@ -15,7 +15,9 @@ export function AppFrame() {
   if (state.onboarded && path === '/onboarding') return <Navigate to="/today" replace />;
 
   const activeTab = path.split('/')[1] || 'today';
-  const hideNav = NAV_HIDDEN_PREFIXES.some((p) => path.startsWith(p));
+  // Hide the nav on full-screen takeovers, incl. the lesson reader (/lessons/:id),
+  // which has its own Back/Next footer — not the lessons list (/lessons).
+  const hideNav = NAV_HIDDEN_PREFIXES.some((p) => path.startsWith(p)) || /^\/lessons\/[^/]+/.test(path);
 
   return (
     <div className="app-frame">
