@@ -1,5 +1,7 @@
-import { lazy, Suspense } from 'react';
+import { lazy, Suspense, useEffect } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
+import { useApp } from './store/AppStore';
+import { trackOnce } from './analytics';
 import { AppFrame } from './components/AppFrame';
 import { Onboarding } from './screens/onboarding/Onboarding';
 import { Today } from './screens/Today';
@@ -18,7 +20,23 @@ const KidZone = lazy(() => import('./screens/kidzone/KidZone').then((m) => ({ de
 // loaded before (and separate from) the app so it stays fast on cold traffic.
 const Funnel = lazy(() => import('./funnel/Funnel').then((m) => ({ default: m.Funnel })));
 
+// Captured at load, before react-router can rewrite the URL.
+const INITIAL_SEARCH = typeof window !== 'undefined' ? window.location.search : '';
+
 export default function App() {
+  const { dispatch } = useApp();
+
+  // Returning from a successful Stripe checkout (?upgraded=1[&plan=annual|monthly])
+  // → unlock Premium and fire the Subscribe conversion once.
+  useEffect(() => {
+    const p = new URLSearchParams(INITIAL_SEARCH);
+    if (p.get('upgraded') === '1') {
+      dispatch({ type: 'updateSettings', patch: { plan: 'premium', trialStart: undefined } });
+      trackOnce('subscribe', 'Subscribe', { plan: p.get('plan') || 'annual', value: p.get('plan') === 'monthly' ? 14.99 : 99, currency: 'USD' });
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+  }, [dispatch]);
+
   return (
     <TourProvider>
     <Routes>

@@ -26,16 +26,14 @@ export function Paywall() {
   const codeRef = useRef<HTMLDivElement>(null);
 
   const startTrial = () => {
-    if (plan.tier === 'free' && !plan.trialExpired) {
-      dispatch({ type: 'updateSettings', patch: { plan: 'trial', trialStart: Date.now() } });
-      trackOnce('start_trial', 'StartTrial', { plan: selected, value: selected === 'annual' ? 99 : 14.99, currency: 'USD', predicted_ltv: 99 });
-      navigate(-1);
-      return;
-    }
-    // trial used up → real checkout (Stripe links when configured)
-    track('InitiateCheckout', { plan: selected, value: selected === 'annual' ? 99 : 14.99, currency: 'USD' });
+    // Card upfront: go straight to Stripe checkout for the chosen plan. Stripe
+    // collects the card, runs the 7-day trial, and auto-charges on day 8. On
+    // success it redirects back to the app (?upgraded=1) which unlocks Premium.
+    const value = selected === 'annual' ? 99 : 14.99;
+    trackOnce('start_trial', 'StartTrial', { plan: selected, value, currency: 'USD', predicted_ltv: 99 });
+    track('InitiateCheckout', { plan: selected, value, currency: 'USD' });
     const url = selected === 'annual' ? STRIPE_ANNUAL : STRIPE_MONTHLY;
-    if (url) window.open(url, '_blank');
+    if (url) window.location.href = url;
     else codeRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
   };
 
