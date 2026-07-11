@@ -13,6 +13,8 @@
  * source of truth for real subscription counts.
  */
 
+import { isNativeApp } from './native';
+
 type Params = Record<string, unknown>;
 
 function fbq(): ((...a: unknown[]) => void) | undefined {
@@ -63,6 +65,9 @@ function sendCapi(event_name: string, event_id: string, params?: Params) {
 }
 
 function fire(method: 'track' | 'trackCustom', event: string, params?: Params) {
+  // COPPA: the native app (used by children in Kid Zone) sends NO third-party
+  // analytics. Meta tracking stays on the web acquisition funnel only.
+  if (isNativeApp()) return;
   const event_id = newEventId();
   const f = fbq();
   if (f) { try { f(method, event, params || {}, { eventID: event_id }); } catch { /* ignore */ } }
@@ -82,6 +87,7 @@ export function trackCustom(event: string, params?: Params) { fire('trackCustom'
  * carries the same id. No CAPI call here: the server side is the webhook's job.
  */
 export function trackBrowser(event: string, params: Params, eventId: string) {
+  if (isNativeApp()) return; // COPPA: no third-party tracking in the native app
   const f = fbq();
   if (f) { try { f('track', event, params, { eventID: eventId }); } catch { /* ignore */ } }
   if (import.meta.env.DEV) console.log(`%c[pixel:browser] ` + event, 'color:#7A5AD9;font-weight:bold', params, eventId);
