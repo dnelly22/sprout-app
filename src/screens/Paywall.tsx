@@ -5,6 +5,8 @@ import { Icon, Input } from '../components/ds';
 import { popBg, PopCard, PopButton, INK, GRAPE } from '../components/pop';
 import { usePlan, PRICE, goToCheckout } from '../engine/plan';
 import { track, trackOnce } from '../analytics';
+import { isIOSApp } from '../native';
+import { iapPackages, iapPurchase, iapRestore } from '../iap';
 
 const UNLOCK_CODE = 'SPROUT-FAM';   // family & friends → premium
 const ADMIN_CODE = 'SPROUT-ADMIN';  // premium + admin tools in Settings
@@ -21,11 +23,28 @@ export function Paywall() {
   const [selected, setSelected] = useState<'annual' | 'monthly'>('annual');
   const [code, setCode] = useState('');
   const [codeMsg, setCodeMsg] = useState<'ok' | 'admin' | 'bad' | null>(null);
+  const [busy, setBusy] = useState(false);
   const codeRef = useRef<HTMLDivElement>(null);
+  const ios = isIOSApp();
+
+  const unlockPremium = () => { dispatch({ type: 'updateSettings', patch: { plan: 'premium' } }); navigate('/today', { replace: true }); };
+
+  // iOS: Apple In-App Purchase via RevenueCat (App Store Guideline 3.1.1).
+  const startTrialIOS = async () => {
+    if (busy) return;
+    setBusy(true);
+    const pkgs = await iapPackages();
+    const chosen = pkgs.find((p) => p.period === selected) || pkgs[0];
+    if (!chosen) { setBusy(false); setCodeMsg('bad'); return; } // no products configured yet
+    const ok = await iapPurchase(chosen.pkg);
+    setBusy(false);
+    if (ok) unlockPremium();
+  };
 
   const startTrial = () => {
-    // Begin checkout (browser + CAPI, deduped). StartTrial/Purchase fire later,
-    // server-side, from the Stripe webhook + /success page (see api/stripe-webhook).
+    if (ios) { void startTrialIOS(); return; }
+    // Web / Stripe. Begin checkout (browser + CAPI, deduped). StartTrial/Purchase
+    // fire later server-side, from the Stripe webhook + /success page.
     const isAnnual = selected === 'annual';
     track('InitiateCheckout', {
       content_name: isAnnual ? 'Annual Plan' : 'Monthly Plan',
@@ -37,15 +56,21 @@ export function Paywall() {
     goToCheckout(selected, state.parent.email); // → Stripe; on success → /success?session_id=…
   };
 
-  // "Already paid?" — verify the subscription with Stripe by email and unlock.
+  // Restore. iOS → Apple restore (required for subscription apps); web → verify
+  // the Stripe subscription by email.
   const restoreAccess = () => {
+    if (ios) {
+      setRestore('checking');
+      iapRestore().then((ok) => { if (ok) unlockPremium(); else setRestore('none'); });
+      return;
+    }
     const email = state.parent.email?.trim();
     if (!email) { setRestore('none'); return; }
     setRestore('checking');
     fetch(`/api/subscription?email=${encodeURIComponent(email)}`)
       .then((r) => r.json())
       .then((d: { premium?: boolean }) => {
-        if (d?.premium) { dispatch({ type: 'updateSettings', patch: { plan: 'premium' } }); navigate('/today', { replace: true }); }
+        if (d?.premium) unlockPremium();
         else setRestore('none');
       })
       .catch(() => setRestore('none'));
@@ -119,17 +144,17 @@ export function Paywall() {
 
           <div style={{ padding: '16px 20px 0' }}>
             <PopButton fullWidth onClick={startTrial} style={{ fontSize: 16, minHeight: 52 }}>
-              {plan.trialExpired ? 'Continue with Premium' : 'Start Free Trial'}
+              {busy ? 'Opening…' : plan.trialExpired ? 'Continue with Premium' : 'Start Free Trial'}
             </PopButton>
             <button onClick={() => navigate(-1)} style={{ display: 'block', margin: '12px auto 0', border: 'none', background: 'none', fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 13, color: 'var(--ink-400)', cursor: 'pointer' }}>
               Maybe Later
             </button>
             <button onClick={restoreAccess} disabled={restore === 'checking'} style={{ display: 'block', margin: '6px auto 0', border: 'none', background: 'none', fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 12.5, color: 'var(--grape-600)', cursor: 'pointer' }}>
-              {restore === 'checking' ? 'Checking…' : 'Already paid? Restore access'}
+              {restore === 'checking' ? 'Checking…' : ios ? 'Restore Purchases' : 'Already paid? Restore access'}
             </button>
             {restore === 'none' && (
               <div style={{ textAlign: 'center', fontSize: 12, fontWeight: 700, color: 'var(--ink-400)', marginTop: 4 }}>
-                No active subscription found for {state.parent.email || 'your account'}.
+                {ios ? 'No previous purchase found to restore.' : `No active subscription found for ${state.parent.email || 'your account'}.`}
               </div>
             )}
           </div>
