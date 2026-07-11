@@ -310,7 +310,40 @@ export function ValueStack2({ onNext }: { onNext: () => void }) {
   );
 }
 
-/* BEAT 10 — RECOMMENDATION (Dual tiles default) */
+/* BEAT 10 — LEAD CAPTURE (name + email gate before the plan reveal) */
+const emailOk = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim());
+function Field({ label, type, value, placeholder, autoComplete, onChange }: { label: string; type: string; value: string; placeholder: string; autoComplete: string; onChange: (v: string) => void }) {
+  return (
+    <label style={{ display: 'block', marginBottom: 13 }}>
+      <span style={{ display: 'block', fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 13, color: INK, marginBottom: 6 }}>{label}</span>
+      <input
+        type={type} value={value} placeholder={placeholder} autoComplete={autoComplete} inputMode={type === 'email' ? 'email' : 'text'}
+        onChange={(e) => onChange(e.target.value)}
+        style={{ width: '100%', border: '2.5px solid var(--ink-900)', borderRadius: 14, background: '#fff', boxShadow: '2px 3px 0 var(--grape-300)', padding: '14px 15px', fontFamily: 'var(--font-body)', fontWeight: 600, fontSize: 16, color: INK, outline: 'none' }}
+      />
+    </label>
+  );
+}
+export function LeadCapture({ name, email, onName, onEmail, onSubmit, submitting }: {
+  name: string; email: string; onName: (v: string) => void; onEmail: (v: string) => void; onSubmit: () => void; submitting?: boolean;
+}) {
+  const ready = name.trim().length >= 1 && emailOk(email);
+  return (
+    <div className="beat-in">
+      <Eyebrow>Last step</Eyebrow>
+      <h1 style={CP.h1(27)}>Your plan is ready.<br />Where should we send it?</h1>
+      <p style={{ ...CP.sub(), fontSize: 15.5, margin: '0 0 20px' }}>Pop in your name and email and we’ll unlock your personalized plan on the next screen.</p>
+      <form onSubmit={(e) => { e.preventDefault(); if (ready && !submitting) onSubmit(); }}>
+        <Field label="Your first name" type="text" value={name} placeholder="e.g. Sam" autoComplete="given-name" onChange={onName} />
+        <Field label="Your email" type="email" value={email} placeholder="you@email.com" autoComplete="email" onChange={onEmail} />
+        <div style={{ marginTop: 18 }}><StepBtn onClick={onSubmit} disabled={!ready || submitting} arrow>{submitting ? 'Building…' : 'See my plan'}</StepBtn></div>
+      </form>
+      <Trust>We’ll email your plan — no spam, unsubscribe anytime.</Trust>
+    </div>
+  );
+}
+
+/* BEAT 11 — RECOMMENDATION (Dual tiles default) */
 export function Recommendation({ kidWorld, kidDesc, parentTrack, onNext }: { kidWorld: string; kidDesc: string; parentTrack: string; onNext: () => void }) {
   const Tile = ({ fc, tint, icon, tag, title, meta }: { fc: string; tint: string; icon: string; tag: string; title: string; meta: string }) => (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', background: tint, border: '2.5px solid var(--ink-900)', borderRadius: 18, boxShadow: '3px 4px 0 rgba(42,37,33,.16)', padding: '14px 13px', minHeight: 158 }}>

@@ -24,7 +24,7 @@ export function resolveEnv(detected: Env): Exclude<Env, 'other'> {
 }
 
 // Funnel events route through the shared analytics entry point (src/analytics.ts).
-export { track, trackCustom, trackOnce, captureClickId } from '../analytics';
+export { track, trackCustom, trackOnce, trackBrowser, captureClickId } from '../analytics';
 
 /* ---- answer → plan mapping (drives the Recommendation beat + app pass-through) ---- */
 export const KID_MAP: Record<string, string> = {

@@ -2,10 +2,10 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Hook, MultiBeat, SingleBeat, MechanismBeat, GamesBeat, ValueStack1, ValueStack2,
-  Recommendation, Offer, Progress, InstallSheet, type Opt, type Creative,
+  LeadCapture, Recommendation, Offer, Progress, InstallSheet, type Opt, type Creative,
 } from './ui';
 import {
-  detectEnv, resolveEnv, track, trackCustom, trackOnce, captureClickId, KID_MAP, KID_DESC, PARENT_MAP, STATE_KEY, INTAKE_KEY, type Env,
+  detectEnv, resolveEnv, track, trackCustom, trackOnce, trackBrowser, captureClickId, KID_MAP, KID_DESC, PARENT_MAP, STATE_KEY, INTAKE_KEY, type Env,
 } from './env';
 import { isDesktop } from '../device';
 
@@ -57,7 +57,7 @@ const Q4_OBJECT: Opt[] = [
   { k: 'nothing', label: 'I’ve tried apps or books, but nothing stuck' },
 ];
 
-interface Saved { beat?: number; q1?: string[]; q2?: string[]; q3?: string | null; q4?: string[] }
+interface Saved { beat?: number; q1?: string[]; q2?: string[]; q3?: string | null; q4?: string[]; name?: string; email?: string; leadSent?: boolean }
 function loadState(): Saved {
   try { const s = JSON.parse(localStorage.getItem(STATE_KEY) || 'null'); if (s && typeof s === 'object') return s; } catch { /* ignore */ }
   return {};
@@ -66,7 +66,8 @@ const asArr = (v: unknown): string[] => (Array.isArray(v) ? v : []);
 
 /**
  * Sprout acquisition funnel (the Meta-ads landing page at /start).
- * 11-beat linear flow → personalized plan → PWA install. The installed
+ * Linear flow: hook → quiz → value → name/email capture (the Lead) →
+ * personalized plan → PWA install. The installed
  * home-screen icon opens the app at "/" (manifest start_url), and the app
  * reads `sprout_intake` to personalize onboarding.
  */
@@ -81,6 +82,11 @@ export function Funnel() {
   const [q2, setQ2] = useState<string[]>(asArr(saved.q2));
   const [q3, setQ3] = useState<string | null>(saved.q3 || null);
   const [q4, setQ4] = useState<string[]>(asArr(saved.q4));
+  const [name, setName] = useState(saved.name || '');
+  const [email, setEmail] = useState(saved.email || '');
+  const [submitting, setSubmitting] = useState(false);
+  const [leadSent, setLeadSent] = useState(!!saved.leadSent);
+  const sending = useRef(false);
   const [sheet, setSheet] = useState(false);
   const [installed, setInstalled] = useState(false);
 
@@ -96,19 +102,10 @@ export function Funnel() {
   const parentTrack = PARENT_MAP[primObject] || 'When They Won’t Open Up';
 
   useEffect(() => {
-    try { localStorage.setItem(STATE_KEY, JSON.stringify({ beat, q1, q2, q3, q4 })); } catch { /* ignore */ }
-  }, [beat, q1, q2, q3, q4]);
-
-  // Pass-through: write intake once the plan is revealed (app reads this).
-  useEffect(() => {
-    if (beat >= 10) {
-      try { localStorage.setItem(INTAKE_KEY, JSON.stringify({ q1, q2, q3, q4, kidWorld, parentTrack, ts: Date.now() })); } catch { /* ignore */ }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [beat]);
+    try { localStorage.setItem(STATE_KEY, JSON.stringify({ beat, q1, q2, q3, q4, name, email, leadSent })); } catch { /* ignore */ }
+  }, [beat, q1, q2, q3, q4, name, email, leadSent]);
 
   useEffect(() => { captureClickId(); track('ViewContent', { content_name: 'funnel_v2_hook', angle }); }, [angle]);
-  useEffect(() => { if (beat === 10) track('Lead', { content_name: 'funnel_complete', kidWorld, parentTrack }); }, [beat, kidWorld, parentTrack]);
   // Opened from the home screen → an install happened (fire once, best real signal).
   useEffect(() => { if (detected === 'installed') trackOnce('a2hs', 'AddToHomeScreen', { via: 'standalone' }, true); }, [detected]);
 
@@ -140,6 +137,30 @@ export function Funnel() {
   function fallbackOpen() {
     trackCustom('OpenInBrowser');
     navigate('/');
+  }
+
+  // Name + email capture → this is the Lead. Fires the browser pixel Lead and
+  // POSTs to /api/lead (Google Sheet row + matching server-side CAPI Lead with
+  // the same event_id), then reveals the plan. Best-effort: never blocks the UX.
+  function submitLead() {
+    const nm = name.trim();
+    const em = email.trim().toLowerCase();
+    if (!nm || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)) return;
+    // Pass-through for the installed app's onboarding (name/email prefill + plan).
+    try { localStorage.setItem(INTAKE_KEY, JSON.stringify({ name: nm, email: em, q1, q2, q3, q4, kidWorld, parentTrack, ts: Date.now() })); } catch { /* ignore */ }
+    if (leadSent || sending.current) { goto(11); return; } // already captured (came back) — don't double-fire
+    sending.current = true;
+    setSubmitting(true);
+    const event_id = (() => { try { return crypto.randomUUID(); } catch { return 'lead-' + Date.now() + '-' + Math.random().toString(36).slice(2, 9); } })();
+    trackBrowser('Lead', { content_name: 'funnel_complete', kidWorld, parentTrack }, event_id);
+    try {
+      fetch('/api/lead', {
+        method: 'POST', headers: { 'content-type': 'application/json' }, keepalive: true,
+        body: JSON.stringify({ name: nm, email: em, q1, q2, q3, q4, kidWorld, parentTrack, angle, event_id, event_source_url: window.location.href }),
+      }).catch(() => { /* ignore — best effort */ });
+    } catch { /* ignore */ }
+    setLeadSent(true);
+    goto(11);
   }
 
   let screen;
@@ -178,10 +199,11 @@ export function Funnel() {
   else if (beat === 7) screen = <GamesBeat onNext={() => goto(8)} />;
   else if (beat === 8) screen = <ValueStack1 onNext={() => goto(9)} />;
   else if (beat === 9) screen = <ValueStack2 onNext={() => goto(10)} />;
-  else if (beat === 10) screen = <Recommendation kidWorld={kidWorld} kidDesc={kidDesc} parentTrack={parentTrack} onNext={() => goto(11)} />;
+  else if (beat === 10) screen = <LeadCapture name={name} email={email} onName={setName} onEmail={setEmail} onSubmit={submitLead} submitting={submitting} />;
+  else if (beat === 11) screen = <Recommendation kidWorld={kidWorld} kidDesc={kidDesc} parentTrack={parentTrack} onNext={() => goto(12)} />;
   else screen = <Offer onInstall={handleInstall} onFallback={fallbackOpen} />;
 
-  const showBack = beat >= 2 && beat <= 10 && !sheet;
+  const showBack = beat >= 2 && beat <= 11 && !sheet;
 
   return (
     <div className="fnl-page">
