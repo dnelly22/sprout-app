@@ -1,4 +1,5 @@
 import { registerSW } from 'virtual:pwa-register';
+import { isNativeApp } from './native';
 
 /**
  * Register the service worker and keep the installed (home-screen) app fresh.
@@ -11,6 +12,10 @@ import { registerSW } from 'virtual:pwa-register';
  *      (guarded so we never reload on the first install or loop).
  */
 export function initPWA() {
+  // The native (Capacitor) app ships its JS baked into the binary and updates
+  // via the App Store / OTA — a service worker there is unnecessary and its
+  // auto-reload logic can misbehave inside the WebView. Web/PWA only.
+  if (isNativeApp()) return;
   if ('serviceWorker' in navigator) {
     const hadController = !!navigator.serviceWorker.controller; // false on first-ever load
     let reloading = false;
