@@ -5,11 +5,13 @@ import { Icon, Input } from '../components/ds';
 import { popBg, PopCard, PopButton, INK, GRAPE } from '../components/pop';
 import { usePlan, PRICE, goToCheckout } from '../engine/plan';
 import { track, trackOnce } from '../analytics';
-import { isIOSApp } from '../native';
+import { isIOSApp, openUrl } from '../native';
 import { iapPackages, iapPurchase, iapRestore } from '../iap';
 
 const UNLOCK_CODE = 'SPROUT-FAM';   // family & friends → premium
 const ADMIN_CODE = 'SPROUT-ADMIN';  // premium + admin tools in Settings
+
+const legalLink: React.CSSProperties = { border: 'none', background: 'none', padding: 0, font: 'inherit', color: 'var(--grape-600)', fontWeight: 800, cursor: 'pointer', textDecoration: 'underline' };
 
 /**
  * Sprouts Premium — one plan, 7-day free trial, annual emphasized.
@@ -202,9 +204,12 @@ export function Paywall() {
       )}
 
       <p style={{ textAlign: 'center', fontSize: 11.5, fontWeight: 700, color: 'var(--ink-400)', margin: '16px 24px 0', lineHeight: 1.6 }}>
-        Cancel anytime before your trial ends. Subscription renews automatically unless canceled.
+        {PRICE.annual}/year or {PRICE.monthly}/month after the 7-day free trial. Subscription auto-renews unless
+        turned off at least 24h before the period ends; manage or cancel anytime in your {ios ? 'Apple Account' : 'account'} settings.
         <br />
-        <a href="/privacy.html" target="_blank" rel="noreferrer" style={{ color: 'var(--grape-600)' }}>Terms &amp; Privacy</a>
+        <button onClick={() => openUrl('/terms.html')} style={legalLink}>Terms of Use</button>
+        {' · '}
+        <button onClick={() => openUrl('/privacy.html')} style={legalLink}>Privacy Policy</button>
       </p>
     </div>
   );

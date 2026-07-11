@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../store/AppStore';
 import { usePlan } from '../engine/plan';
+import { openUrl } from '../native';
 import { Icon, Switch, Sheet } from '../components/ds';
 import { INK, popBg, PopCard, SectionHead, PopButton } from '../components/pop';
 import type { Child } from '../types';
@@ -130,8 +131,11 @@ export function Settings() {
             <SettingRow first icon="bell" tint="var(--sun-100)" label="Notifications" right={<Switch checked={state.settings.notifications} onChange={(v) => dispatch({ type: 'updateSettings', patch: { notifications: v } })} />} />
             <SettingRow icon="music" tint="var(--grape-100)" label="Background music" right={<Switch checked={state.settings.music ?? true} onChange={(v) => dispatch({ type: 'updateSettings', patch: { music: v } })} />} />
             <SettingRow icon="volume-2" tint="var(--sky-100)" label="Sound effects" right={<Switch checked={state.settings.sfx ?? true} onChange={(v) => dispatch({ type: 'updateSettings', patch: { sfx: v } })} />} />
-            <SettingRow icon="circle-help" tint="var(--green-100)" label="Help &amp; support" meta="hello@alenlor.com" right={<Icon name="chevron-right" size={20} color="var(--ink-300)" />} onTap={() => { window.location.href = 'mailto:hello@alenlor.com'; }} />
-            <SettingRow icon="info" tint="var(--coral-100)" label="About Sprout" meta="Sprout by Alenlor · v1.0" />
+            <SettingRow icon="circle-help" tint="var(--green-100)" label="Help &amp; support" meta="support@alenlor.com" right={<Icon name="chevron-right" size={20} color="var(--ink-300)" />} onTap={() => { window.location.href = 'mailto:support@alenlor.com'; }} />
+            <SettingRow icon="file-text" tint="var(--grape-100)" label="Terms of Use" right={<Icon name="chevron-right" size={20} color="var(--ink-300)" />} onTap={() => { void openUrl('/terms.html'); }} />
+            <SettingRow icon="shield" tint="var(--sky-100)" label="Privacy Policy" right={<Icon name="chevron-right" size={20} color="var(--ink-300)" />} onTap={() => { void openUrl('/privacy.html'); }} />
+            <SettingRow icon="trash-2" tint="var(--coral-100)" label="Delete all my data" meta="Clears everything on this device" onTap={() => { if (confirm('Delete all Sprout data on this device? This can’t be undone.')) { window.localStorage.removeItem('sprout_state_v1'); window.location.assign('/'); } }} />
+            <SettingRow icon="info" tint="var(--coral-100)" label="About Sprout" meta="Alenlor, LLC · v1.0.0" />
           </Group>
         </div>
 
@@ -154,7 +158,6 @@ export function Settings() {
         <button onClick={() => { dispatch({ type: 'updateSettings', patch: { tourDone: false } }); navigate('/today'); }} style={{ border: `2.5px solid ${INK}`, background: '#fff', color: INK, fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 14, borderRadius: 99, padding: 12, cursor: 'pointer', boxShadow: '3px 4px 0 var(--grape-300)' }}>
           Replay tutorial
         </button>
-        <button style={{ border: 'none', background: 'none', color: 'var(--coral-600)', fontFamily: 'var(--font-display)', fontWeight: 800, padding: '4px 0', cursor: 'pointer' }}>Sign out</button>
       </div>
 
       {/* ---------------- sheets ---------------- */}
