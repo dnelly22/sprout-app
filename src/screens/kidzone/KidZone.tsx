@@ -15,7 +15,7 @@ import { KidProgress } from './KidProgress';
 import { Mascot } from './Mascot';
 import { QuickFireGame } from './games/QuickFire';
 import { SayItGame } from './games/SayIt';
-import { burstConfetti } from './confetti';
+import { LevelUpCard, KidStreakCard, AwardToast } from '../../components/celebrations';
 
 // Lazy so the heavy Journey scenario data only downloads when a child actually
 // opens a Journey (or the Boss Challenge), not on entering Kid Zone.
@@ -207,28 +207,22 @@ function CelebrationOverlay() {
   const [levelUp, setLevelUp] = useState<{ level: number; title: string; stars: number } | null>(null);
   const [streakPop, setStreakPop] = useState<{ days: number; stars: number } | null>(null);
   const [toast, setToast] = useState<{ title: string; sub?: string } | null>(null);
-  const confettiRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!award || award.ts <= seen.current) return;
     seen.current = award.ts;
     const firstOfDay = award.breakdown.some((b) => /first activity today/.test(b));
+    // The cards fire their own confetti + sound on mount; we just pick one.
     if (award.leveledTo) {
       setLevelUp({ ...award.leveledTo, stars: award.stars });
-      sfx('cheer');
-      setTimeout(() => burstConfetti(confettiRef.current, 36), 300);
     } else if (firstOfDay) {
       // the day's first meaningful activity extended the learning streak
       const days = learningStreak(state.activity, award.childId).current;
       setStreakPop({ days, stars: award.stars });
-      sfx('cheer');
-      setTimeout(() => burstConfetti(confettiRef.current, 28), 300);
     } else if (award.newBadges.length) {
       setToast({ title: `🏅 New badge: ${award.newBadges[0]}!`, sub: `+${award.stars} stars earned` });
-      sfx('celebrate');
     } else if (award.questCompleted) {
       setToast({ title: '✅ Daily Quest complete!', sub: `+${award.stars} stars earned` });
-      sfx('celebrate');
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [award]);
@@ -239,70 +233,8 @@ function CelebrationOverlay() {
     return () => clearTimeout(t);
   }, [toast]);
 
-  if (levelUp) {
-    return (
-      <div
-        onClick={() => setLevelUp(null)}
-        style={{ position: 'fixed', inset: 0, zIndex: 300, background: 'rgba(42,37,33,.72)', display: 'grid', placeItems: 'center', padding: 24 }}
-      >
-        <div ref={confettiRef} style={{ background: 'linear-gradient(155deg, var(--grape-500), var(--grape-600))', border: `2.5px solid ${INK}`, borderRadius: 24, boxShadow: '6px 7px 0 rgba(42,37,33,.9)', padding: 8, width: '100%', maxWidth: 340 }}>
-          <div style={{ border: '2px dashed rgba(255,255,255,.4)', borderRadius: 17, padding: '22px 16px', textAlign: 'center' }}>
-            <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 12, letterSpacing: '.1em', color: 'var(--sun-300)' }}>✦ LEVEL UP ✦</div>
-            <div style={{ margin: '10px auto 0', width: 130, height: 130, borderRadius: '50%', background: 'radial-gradient(circle at 50% 35%, #EAF6E2, #BFE3CB)', border: `2.5px solid ${INK}`, display: 'grid', placeItems: 'center', overflow: 'hidden' }}>
-              <Mascot mood="growth" playKey={levelUp.level} size={116} />
-            </div>
-            <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 26, color: '#fff', marginTop: 12, lineHeight: 1.1 }}>{levelUp.title}</div>
-            <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 13, color: 'var(--grape-100)', marginTop: 3 }}>Your Sprout grew to Level {levelUp.level}!</div>
-            <div style={{ marginTop: 12 }}>
-              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, background: '#fff', border: `2px solid ${INK}`, borderRadius: 99, padding: '4px 14px', fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 13, color: INK }}>
-                <Icon name="star" size={14} color="var(--sun-500)" fill="var(--sun-500)" />+{levelUp.stars} stars
-              </span>
-            </div>
-            <button style={{ marginTop: 16, width: '100%', border: `2.5px solid ${INK}`, borderRadius: 99, background: '#fff', color: INK, fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 15, padding: 12, boxShadow: '3px 4px 0 rgba(42,37,33,.5)', cursor: 'pointer' }}>
-              Keep growing! 🌱
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (streakPop) {
-    return (
-      <div
-        onClick={() => setStreakPop(null)}
-        style={{ position: 'fixed', inset: 0, zIndex: 300, background: 'rgba(42,37,33,.72)', display: 'grid', placeItems: 'center', padding: 24 }}
-      >
-        <div ref={confettiRef} style={{ background: '#fff', border: `2.5px solid ${INK}`, borderRadius: 24, boxShadow: '6px 7px 0 rgba(42,37,33,.9)', padding: '26px 20px', width: '100%', maxWidth: 320, textAlign: 'center' }}>
-          <span style={{ display: 'inline-grid', placeItems: 'center', width: 84, height: 84, borderRadius: '50%', background: '#FBE3D8', border: `2.5px solid ${INK}`, fontSize: 40 }}>🔥</span>
-          <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 30, color: INK, marginTop: 12, lineHeight: 1.05 }}>
-            {streakPop.days}-day streak!
-          </div>
-          <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 13.5, color: 'var(--ink-500)', marginTop: 5 }}>
-            Your Sprout grew today. {streakPop.days >= 3 ? 'You’re on a roll! 🌱' : 'Come back tomorrow to keep it going!'}
-          </div>
-          <div style={{ marginTop: 12 }}>
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, background: 'var(--sun-100)', border: `2px solid ${INK}`, borderRadius: 99, padding: '4px 14px', fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 13, color: INK }}>
-              <Icon name="star" size={14} color="var(--sun-500)" fill="var(--sun-500)" />+{streakPop.stars} stars
-            </span>
-          </div>
-          <button style={{ marginTop: 16, width: '100%', border: `2.5px solid ${INK}`, borderRadius: 99, background: 'var(--coral-500)', color: '#fff', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 15, padding: 12, boxShadow: '3px 4px 0 rgba(42,37,33,.85)', cursor: 'pointer' }}>
-            Keep it up! 🔥
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  if (toast) {
-    return (
-      <div style={{ position: 'fixed', left: 0, right: 0, bottom: 'calc(env(safe-area-inset-bottom, 0px) + 18px)', zIndex: 300, display: 'flex', justifyContent: 'center', pointerEvents: 'none', padding: '0 20px' }}>
-        <div className="fade-up" style={{ background: '#fff', border: `2.5px solid ${INK}`, borderRadius: 16, boxShadow: '4px 5px 0 rgba(42,37,33,.85)', padding: '12px 18px', maxWidth: 340 }}>
-          <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 15, color: INK }}>{toast.title}</div>
-          {toast.sub && <div style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--ink-500)', marginTop: 2 }}>{toast.sub}</div>}
-        </div>
-      </div>
-    );
-  }
+  if (levelUp) return <LevelUpCard level={levelUp.level} title={levelUp.title} stars={levelUp.stars} onClose={() => setLevelUp(null)} />;
+  if (streakPop) return <KidStreakCard days={streakPop.days} stars={streakPop.stars} onClose={() => setStreakPop(null)} />;
+  if (toast) return <AwardToast title={toast.title} sub={toast.sub} />;
   return null;
 }

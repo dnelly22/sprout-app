@@ -9,6 +9,7 @@ import { Coach } from './screens/Coach';
 import { Progress } from './screens/Progress';
 import { Settings } from './screens/Settings';
 import { Paywall } from './screens/Paywall';
+import { PopupPreview } from './screens/PopupPreview';
 import { Success } from './screens/Success';
 import { TourProvider } from './components/GuidedTour';
 import { SubscriptionSync } from './components/SubscriptionSync';
@@ -41,6 +42,7 @@ export default function App() {
         <Route path="progress" element={<Progress />} />
         <Route path="settings" element={<Settings />} />
         <Route path="plans" element={<Paywall />} />
+        <Route path="dev" element={<PopupPreview />} />
         <Route path="*" element={<Navigate to="/today" replace />} />
       </Route>
     </Routes>

@@ -9,6 +9,7 @@ import { lessonVisual } from '../data/lessons';
 import { REWARD } from '../engine/economy';
 import { usePlan } from '../engine/plan';
 import { centeredOnTablet } from '../useResponsive';
+import { CelebrationModal, type Celebration } from '../components/celebrations';
 import type { Child } from '../types';
 import { AGE_GROUPS } from './onboarding/Onboarding';
 
@@ -319,8 +320,6 @@ function weekStartInfo() {
 const lsGet = (k: string) => { try { return localStorage.getItem(k); } catch { return null; } };
 const lsSet = (k: string, v: string) => { try { localStorage.setItem(k, v); } catch { /* ignore */ } };
 
-interface Celebration { emoji: string; tint: string; title: string; body: string; cta: string; ctaBg: string }
-
 /**
  * Parent-facing celebrations on Today. Fires at most ONE per open, in priority
  * order — a child milestone (level-up / badge) beats the weekly recap, which
@@ -372,16 +371,7 @@ function TodayCelebrations() {
   }, [award?.ts]);
 
   if (!cel) return null;
-  return (
-    <div onClick={() => setCel(null)} style={{ position: 'fixed', inset: 0, zIndex: 300, background: 'rgba(42,37,33,.72)', display: 'grid', placeItems: 'center', padding: 24 }}>
-      <div onClick={(e) => e.stopPropagation()} className="pop-in" style={{ background: '#fff', border: `2.5px solid ${INK}`, borderRadius: 24, boxShadow: '6px 7px 0 rgba(42,37,33,.9)', padding: '26px 20px', width: '100%', maxWidth: 340, textAlign: 'center' }}>
-        <span style={{ display: 'inline-grid', placeItems: 'center', width: 84, height: 84, borderRadius: '50%', background: cel.tint, border: `2.5px solid ${INK}`, fontSize: 40 }}>{cel.emoji}</span>
-        <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 26, color: INK, marginTop: 12, lineHeight: 1.1 }}>{cel.title}</div>
-        <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 13.5, color: 'var(--ink-500)', marginTop: 6 }}>{cel.body}</div>
-        <button onClick={() => setCel(null)} style={{ marginTop: 16, width: '100%', border: `2.5px solid ${INK}`, borderRadius: 99, background: cel.ctaBg, color: '#fff', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 15, padding: 12, boxShadow: '3px 4px 0 rgba(42,37,33,.85)', cursor: 'pointer' }}>{cel.cta}</button>
-      </div>
-    </div>
-  );
+  return <CelebrationModal cel={cel} onClose={() => setCel(null)} />;
 }
 
 export function FamilyHub({ open, onClose }: { open: boolean; onClose: () => void }) {
