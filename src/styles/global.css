@@ -36,6 +36,12 @@ body {
   overflow: hidden;
 }
 
+/* On tablets the frame fills the screen (iPad portrait is ≤1024pt); individual
+   screens then centre their content and go multi-column via useIsTablet(). */
+@media (min-width: 768px) {
+  .app-frame { max-width: 1024px; }
+}
+
 /* The scrollable screen area above the bottom nav. */
 .app-scroll {
   flex: 1;

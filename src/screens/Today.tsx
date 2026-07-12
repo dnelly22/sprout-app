@@ -8,6 +8,7 @@ import { areaParentLabel, emptyAreaScores, type AreaKey } from '../constants/are
 import { lessonVisual } from '../data/lessons';
 import { REWARD } from '../engine/economy';
 import { usePlan } from '../engine/plan';
+import { centeredOnTablet } from '../useResponsive';
 import type { Child } from '../types';
 import { AGE_GROUPS } from './onboarding/Onboarding';
 
@@ -46,7 +47,7 @@ export function Today() {
   );
 
   return (
-    <div style={{ minHeight: '100%', ...popBg, paddingBottom: 28 }} className="fade-up">
+    <div style={{ minHeight: '100%', ...popBg, paddingBottom: 28, ...centeredOnTablet }} className="fade-up">
       {/* header */}
       <div style={{ padding: '20px 20px 0', display: 'flex', alignItems: 'center', gap: 10 }}>
         <div style={{ flex: 1, minWidth: 0 }}>
