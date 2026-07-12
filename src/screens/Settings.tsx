@@ -145,7 +145,7 @@ export function Settings() {
             <SectionHead icon="wrench" tint="var(--sun-100)">Admin tools</SectionHead>
             <Group>
               <SettingRow first icon="sparkles" tint="var(--grape-100)" label="Preview popups" meta="Play any popup / animation" onTap={() => navigate('/dev')} />
-              <SettingRow icon="star" tint="var(--sun-100)" label="Grant +500 stars" meta={`to ${activeChild.name}`} onTap={() => dispatch({ type: 'awardStars', childId: activeChild.id, stars: 500 })} />
+              <SettingRow icon="star" tint="var(--sun-100)" label="Grant +500 stars" meta={`${activeChild.name} · ${activeChild.stars} ⭐ (tap to add)`} onTap={() => dispatch({ type: 'awardStars', childId: activeChild.id, stars: 500 })} />
               <SettingRow icon="play" tint="var(--grape-100)" label="Replay the tour" meta="Show the guided tour again" onTap={() => { dispatch({ type: 'updateSettings', patch: { tourDone: false } }); navigate('/today'); }} />
               <SettingRow icon="user" tint="var(--sky-100)" label="Switch to free plan" meta="Preview the locked experience" onTap={() => dispatch({ type: 'updateSettings', patch: { plan: 'free', trialStart: undefined } })} />
               <SettingRow icon="zap" tint="var(--green-100)" label="Back to premium" meta="Restore full access" onTap={() => dispatch({ type: 'updateSettings', patch: { plan: 'premium' } })} />
