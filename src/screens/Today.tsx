@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../store/AppStore';
 import { useChildEconomy, type ChildEconomy } from '../engine/selectors';
@@ -48,7 +48,7 @@ export function Today() {
 
   return (
     <div style={{ minHeight: '100%', ...popBg, paddingBottom: 28, ...centeredOnTablet }} className="fade-up">
-      <DailyStreakPopup streak={eco.streak.current} childName={activeChild.name} />
+      <TodayCelebrations />
       {/* header */}
       <div style={{ padding: '20px 20px 0', display: 'flex', alignItems: 'center', gap: 10 }}>
         <div style={{ flex: 1, minWidth: 0 }}>
@@ -309,37 +309,76 @@ function makeHubChild(name: string, age: number, ageLabel: string, color: string
   };
 }
 
+/* ---- Today celebration popups (one at a time, priority-ordered) ---- */
+const isoToday = () => { try { return new Date().toISOString().slice(0, 10); } catch { return ''; } };
+function weekStartInfo() {
+  const d = new Date(); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() - d.getDay()); // back to Sunday
+  let key = ''; try { key = d.toISOString().slice(0, 10); } catch { key = ''; }
+  return { key, ts: d.getTime() };
+}
+const lsGet = (k: string) => { try { return localStorage.getItem(k); } catch { return null; } };
+const lsSet = (k: string, v: string) => { try { localStorage.setItem(k, v); } catch { /* ignore */ } };
+
+interface Celebration { emoji: string; tint: string; title: string; body: string; cta: string; ctaBg: string }
+
 /**
- * Daily streak celebration for the parent — mirrors the Kid Zone streak popup
- * but parent-facing. Shows once per day (per device) on the Today screen when
- * there's a live learning streak, nudging the family to keep it going.
+ * Parent-facing celebrations on Today. Fires at most ONE per open, in priority
+ * order — a child milestone (level-up / badge) beats the weekly recap, which
+ * beats the daily streak — each guarded so it doesn't repeat.
  */
-function DailyStreakPopup({ streak, childName }: { streak: number; childName: string }) {
-  const [show, setShow] = useState(false);
+function TodayCelebrations() {
+  const { state, activeChild } = useApp();
+  const eco = useChildEconomy();
+  const award = state.lastAward;
+  const [cel, setCel] = useState<Celebration | null>(null);
+  const ran = useRef(false);
+
   useEffect(() => {
-    if (streak < 1) return;
-    let today = '';
-    try { today = new Date().toISOString().slice(0, 10); } catch { return; }
-    try {
-      if (localStorage.getItem('sprout_streak_seen') === today) return;
-      localStorage.setItem('sprout_streak_seen', today);
-    } catch { return; }
-    setShow(true);
-  }, [streak]);
-  if (!show) return null;
+    if (ran.current) return; // decide once per mount (idempotent under StrictMode)
+    ran.current = true;
+    // 1) Child milestone — level-up or a new badge the parent hasn't seen.
+    if (award && (award.leveledTo || award.newBadges.length)) {
+      const seen = Number(lsGet('sprout_parent_award_seen') || 0);
+      if (award.ts > seen) {
+        lsSet('sprout_parent_award_seen', String(award.ts));
+        const who = state.children.find((c) => c.id === award.childId)?.name ?? activeChild.name;
+        setCel(award.leveledTo
+          ? { emoji: '🌟', tint: 'var(--grape-100)', title: `${who} reached Level ${award.leveledTo.level}!`, body: `Now a ${award.leveledTo.title}. Their Sprout is growing — nice work showing up together.`, cta: 'Love it 🌱', ctaBg: 'var(--grape-500)' }
+          : { emoji: '🏅', tint: 'var(--sun-100)', title: `${who} earned a badge!`, body: `“${award.newBadges[0]}” — a real sign the practice is sticking.`, cta: 'Awesome!', ctaBg: 'var(--grape-500)' });
+        return;
+      }
+    }
+    // 2) Weekly recap — once per week, if there was activity.
+    const wk = weekStartInfo();
+    if (wk.key && lsGet('sprout_recap_seen') !== wk.key) {
+      const week = state.activity.filter((e) => e.childId === activeChild.id && e.ts >= wk.ts);
+      if (week.length >= 1) {
+        lsSet('sprout_recap_seen', wk.key);
+        const stars = week.reduce((s, e) => s + (e.stars || 0), 0);
+        setCel({ emoji: '📅', tint: 'var(--green-100)', title: 'Your week with Sprout', body: `${week.length} ${week.length === 1 ? 'activity' : 'activities'} · ${stars} ⭐ earned · ${eco.streak.current}-day streak. Keep the momentum going!`, cta: 'Let’s keep going', ctaBg: 'var(--green-500)' });
+        return;
+      }
+    }
+    // 3) Daily streak — once per day, if a streak is live.
+    if (eco.streak.current >= 1) {
+      const today = isoToday();
+      if (today && lsGet('sprout_streak_seen') !== today) {
+        lsSet('sprout_streak_seen', today);
+        const d = eco.streak.current;
+        setCel({ emoji: '🔥', tint: '#FBE3D8', title: `${d}-day streak!`, body: d >= 3 ? `${activeChild.name} has shown up ${d} days running — that consistency builds real confidence. 🌱` : `Nice start! Come back tomorrow to keep ${activeChild.name}’s streak growing.`, cta: 'Keep it going! 🔥', ctaBg: 'var(--coral-500)' });
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [award?.ts]);
+
+  if (!cel) return null;
   return (
-    <div onClick={() => setShow(false)} style={{ position: 'fixed', inset: 0, zIndex: 300, background: 'rgba(42,37,33,.72)', display: 'grid', placeItems: 'center', padding: 24 }}>
+    <div onClick={() => setCel(null)} style={{ position: 'fixed', inset: 0, zIndex: 300, background: 'rgba(42,37,33,.72)', display: 'grid', placeItems: 'center', padding: 24 }}>
       <div onClick={(e) => e.stopPropagation()} className="pop-in" style={{ background: '#fff', border: `2.5px solid ${INK}`, borderRadius: 24, boxShadow: '6px 7px 0 rgba(42,37,33,.9)', padding: '26px 20px', width: '100%', maxWidth: 340, textAlign: 'center' }}>
-        <span style={{ display: 'inline-grid', placeItems: 'center', width: 84, height: 84, borderRadius: '50%', background: '#FBE3D8', border: `2.5px solid ${INK}`, fontSize: 40 }}>🔥</span>
-        <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 30, color: INK, marginTop: 12, lineHeight: 1.05 }}>{streak}-day streak!</div>
-        <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 13.5, color: 'var(--ink-500)', marginTop: 5 }}>
-          {streak >= 3
-            ? `${childName} has shown up ${streak} days running — that consistency is what builds real confidence. 🌱`
-            : `Nice start! Come back tomorrow to keep ${childName}’s streak growing.`}
-        </div>
-        <button onClick={() => setShow(false)} style={{ marginTop: 16, width: '100%', border: `2.5px solid ${INK}`, borderRadius: 99, background: 'var(--coral-500)', color: '#fff', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 15, padding: 12, boxShadow: '3px 4px 0 rgba(42,37,33,.85)', cursor: 'pointer' }}>
-          Keep it going! 🔥
-        </button>
+        <span style={{ display: 'inline-grid', placeItems: 'center', width: 84, height: 84, borderRadius: '50%', background: cel.tint, border: `2.5px solid ${INK}`, fontSize: 40 }}>{cel.emoji}</span>
+        <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 26, color: INK, marginTop: 12, lineHeight: 1.1 }}>{cel.title}</div>
+        <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 13.5, color: 'var(--ink-500)', marginTop: 6 }}>{cel.body}</div>
+        <button onClick={() => setCel(null)} style={{ marginTop: 16, width: '100%', border: `2.5px solid ${INK}`, borderRadius: 99, background: cel.ctaBg, color: '#fff', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 15, padding: 12, boxShadow: '3px 4px 0 rgba(42,37,33,.85)', cursor: 'pointer' }}>{cel.cta}</button>
       </div>
     </div>
   );

@@ -63,6 +63,7 @@ export function LessonDetail() {
   }, [content]);
 
   const [i, setI] = useState(0);
+  const [celebrate, setCelebrate] = useState(false);
   if (!content || !steps.length) {
     return (
       <div style={{ minHeight: '100dvh', display: 'grid', placeItems: 'center', padding: 24, textAlign: 'center' }}>
@@ -81,7 +82,12 @@ export function LessonDetail() {
 
   const next = () => {
     if (atLast) {
-      if (!done) { dispatch({ type: 'setLessonStatus', id, status: 'done', progress: 100 }); dispatch({ type: 'updateParent', patch: { lessonsCompleted: state.parent.lessonsCompleted + 1 } }); }
+      if (!done) {
+        dispatch({ type: 'setLessonStatus', id, status: 'done', progress: 100 });
+        dispatch({ type: 'updateParent', patch: { lessonsCompleted: state.parent.lessonsCompleted + 1 } });
+        setCelebrate(true); // celebrate before leaving
+        return;
+      }
       navigate('/lessons');
       return;
     }
@@ -94,6 +100,20 @@ export function LessonDetail() {
 
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 60, background: 'var(--cream-100, #FBF6EC)', display: 'flex', flexDirection: 'column' }}>
+      {celebrate && (
+        <div onClick={() => navigate('/lessons')} style={{ position: 'fixed', inset: 0, zIndex: 80, background: 'rgba(42,37,33,.72)', display: 'grid', placeItems: 'center', padding: 24 }}>
+          <div onClick={(e) => e.stopPropagation()} className="pop-in" style={{ background: '#fff', border: `2.5px solid ${INK}`, borderRadius: 24, boxShadow: '6px 7px 0 rgba(42,37,33,.9)', padding: '26px 20px', width: '100%', maxWidth: 340, textAlign: 'center' }}>
+            <span style={{ display: 'inline-grid', placeItems: 'center', width: 84, height: 84, borderRadius: '50%', background: 'var(--green-100)', border: `2.5px solid ${INK}`, fontSize: 40 }}>🌱</span>
+            <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 26, color: INK, marginTop: 12, lineHeight: 1.1 }}>Lesson complete!</div>
+            <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 13.5, color: 'var(--ink-500)', marginTop: 6 }}>
+              You finished “{content.title}.” That’s {state.parent.lessonsCompleted} {state.parent.lessonsCompleted === 1 ? 'lesson' : 'lessons'} done — one more script in your back pocket. 🌱
+            </div>
+            <button onClick={() => navigate('/lessons')} style={{ marginTop: 16, width: '100%', border: `2.5px solid ${INK}`, borderRadius: 99, background: 'var(--green-500)', color: '#fff', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 15, padding: 12, boxShadow: '3px 4px 0 rgba(42,37,33,.85)', cursor: 'pointer' }}>
+              Back to lessons
+            </button>
+          </div>
+        </div>
+      )}
       {/* header */}
       <div style={{ padding: 'calc(env(safe-area-inset-top, 0px) + 14px) 18px 0', flex: 'none' }}>
         <div style={{ display: 'flex', gap: 13, alignItems: 'flex-start' }}>
