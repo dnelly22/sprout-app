@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useApp } from '../store/AppStore';
 import { Icon, Input } from '../components/ds';
 import { popBg, PopCard, PopButton, INK, GRAPE } from '../components/pop';
+import { centeredOnTablet } from '../useResponsive';
 import { usePlan, PRICE, goToCheckout } from '../engine/plan';
 import { track, trackOnce } from '../analytics';
 import { isIOSApp, openUrl } from '../native';
@@ -102,7 +103,7 @@ export function Paywall() {
   ];
 
   return (
-    <div style={{ minHeight: '100dvh', ...popBg, paddingBottom: 32 }} className="fade-up">
+    <div style={{ minHeight: '100dvh', ...popBg, paddingBottom: 32, ...centeredOnTablet }} className="fade-up">
       <div style={{ padding: '20px 20px 0', display: 'flex', alignItems: 'center' }}>
         <button onClick={() => navigate(-1)} aria-label="Back" style={{ border: 'none', background: 'none', cursor: 'pointer', padding: 4 }}>
           <Icon name="arrow-left" size={22} color={INK} />

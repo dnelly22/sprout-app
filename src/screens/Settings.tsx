@@ -5,6 +5,7 @@ import { usePlan } from '../engine/plan';
 import { openUrl } from '../native';
 import { Icon, Switch, Sheet } from '../components/ds';
 import { INK, popBg, PopCard, SectionHead, PopButton } from '../components/pop';
+import { centeredOnTablet } from '../useResponsive';
 import type { Child } from '../types';
 
 const CHECKIN_DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -44,7 +45,7 @@ export function Settings() {
   const maxChildren = plan.isPremium ? 3 : 1;
 
   return (
-    <div style={{ minHeight: '100dvh', position: 'relative', ...popBg }}>
+    <div style={{ minHeight: '100dvh', position: 'relative', ...popBg, ...centeredOnTablet }}>
       {/* header */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: 'calc(env(safe-area-inset-top, 0px) + 16px) 20px 10px' }}>
         <button onClick={() => navigate(-1)} aria-label="Back" style={{ width: 44, height: 44, borderRadius: 14, border: `2.5px solid ${INK}`, background: '#fff', display: 'grid', placeItems: 'center', flex: 'none', cursor: 'pointer', boxShadow: '2px 2px 0 rgba(42,37,33,.55)' }}>

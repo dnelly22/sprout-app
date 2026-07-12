@@ -5,6 +5,7 @@ import { useChildEconomy } from '../engine/selectors';
 import { dayKey } from '../engine/economy';
 import { Icon, Sheet } from '../components/ds';
 import { popBg, PopCard, SectionHead, InkBar, InkChip, PopButton, INK, GRAPE } from '../components/pop';
+import { centeredOnTablet } from '../useResponsive';
 import { QUIZ, PARENT_POWERS } from '../data/quiz';
 import { areaParentLabel } from '../constants/areas';
 
@@ -18,7 +19,7 @@ export function Progress() {
   const [view, setView] = useState<'child' | 'parent'>('child');
 
   return (
-    <div style={{ minHeight: '100%', ...popBg, paddingBottom: 28 }} className="fade-up">
+    <div style={{ minHeight: '100%', ...popBg, paddingBottom: 28, ...centeredOnTablet }} className="fade-up">
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 20px 12px' }}>
         <h1 style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 24, color: INK, margin: 0 }}>
           Learning <span style={{ color: GRAPE }}>Journey</span>

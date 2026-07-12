@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useApp } from '../store/AppStore';
 import { Icon, Input } from '../components/ds';
 import { popBg, PopCard, SectionHead, InkBar, ArrowCoin, INK, GRAPE } from '../components/pop';
+import { centeredOnTablet } from '../useResponsive';
 import { AREAS, type AreaKey } from '../constants/areas';
 import { SITUATION_CATEGORIES, lessonVisual } from '../data/lessons';
 import { usePlan, freeLessonIds } from '../engine/plan';
@@ -71,7 +72,7 @@ export function Lessons() {
   /* search takes over both modes */
   if (searching) {
     return (
-      <div style={{ minHeight: '100%', ...popBg, paddingBottom: 28 }} className="fade-up">
+      <div style={{ minHeight: '100%', ...popBg, paddingBottom: 28, ...centeredOnTablet }} className="fade-up">
         {header}
         <div style={{ padding: '8px 20px 0', display: 'flex', flexDirection: 'column', gap: 9 }}>
           {results.length === 0 && <p style={{ textAlign: 'center', color: 'var(--ink-500)', fontWeight: 700, padding: '20px 0' }}>No lessons match “{q}”.</p>}
@@ -90,7 +91,7 @@ export function Lessons() {
       filter === 'all'
       || (shelf === 'talking' ? l.areaTags.includes(filter as AreaKey) : l.situationCategory === filter));
     return (
-      <div style={{ minHeight: '100%', ...popBg, paddingBottom: 28 }} className="fade-up">
+      <div style={{ minHeight: '100%', ...popBg, paddingBottom: 28, ...centeredOnTablet }} className="fade-up">
         {header}
         <div style={{ padding: '8px 20px 0' }}>
           <div style={{ display: 'flex', border: `2.5px solid ${INK}`, borderRadius: 99, background: '#fff', padding: 3, boxShadow: '3px 4px 0 var(--grape-300)' }}>
@@ -118,7 +119,7 @@ export function Lessons() {
 
   /* ---------- L1 · dashboard ---------- */
   return (
-    <div style={{ minHeight: '100%', ...popBg, paddingBottom: 28 }} className="fade-up">
+    <div style={{ minHeight: '100%', ...popBg, paddingBottom: 28, ...centeredOnTablet }} className="fade-up">
       {header}
 
       {/* browse the library — two big category buttons */}
