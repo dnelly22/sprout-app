@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useApp } from '../../store/AppStore';
 import { areaColor, areaKidWorld, type AreaKey } from '../../constants/areas';
 import { Button, Icon, PinPad, Sheet } from '../../components/ds';
-import { INK } from '../../components/pop';
+import { INK, popBg } from '../../components/pop';
 import { useSoundMaster } from '../../audio/MusicProvider';
 import { sfx } from '../../audio/sfx';
 import { learningStreak } from '../../engine/economy';
@@ -103,7 +103,7 @@ export function KidZone() {
   } else if (game) {
     const title = game === 'quickfire' ? 'Quick Fire' : 'Say It Out Loud';
     content = (
-      <div className="kidzone" style={{ minHeight: '100dvh', background: 'var(--kid-bg)' }}>
+      <div className="kidzone" style={{ minHeight: '100dvh', ...popBg }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 20px 4px' }}>
           <button onClick={() => setGame(null)} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, border: 'none', background: 'none', color: 'var(--grape-600)', fontWeight: 800, cursor: 'pointer', fontSize: 'var(--text-sm)' }}>
             <Icon name="x" size={20} color="var(--grape-600)" /> Quit

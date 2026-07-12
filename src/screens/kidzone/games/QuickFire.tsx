@@ -3,7 +3,8 @@ import { useApp } from '../../../store/AppStore';
 import { quickfireRound } from '../../../data/drills';
 import { STARS } from '../../../engine/gamification';
 import { areaColor, areaParentLabel } from '../../../constants/areas';
-import { Button, Card, Icon } from '../../../components/ds';
+import { Icon } from '../../../components/ds';
+import { PopCard, PopButton, InkBar, INK } from '../../../components/pop';
 import { StarPop } from '../KidFace';
 import { Mascot, useMascotCelebrate, preloadMascots } from '../Mascot';
 import { burstConfetti } from '../confetti';
@@ -79,13 +80,13 @@ export function QuickFireGame({ child, onExit }: Props) {
           <div style={{ display: 'inline-block' }}><Mascot mood={celebMood} playKey={playKey} size={96} /></div>
           <h1 style={{ fontSize: 'var(--text-3xl)', color: 'var(--grape-600)', marginTop: 10 }}>Round done!</h1>
         </div>
-        <Card tone="tint" style={{ display: 'flex', justifyContent: 'space-around', textAlign: 'center', padding: '18px 12px' }}>
+        <PopCard tone="sun" style={{ display: 'flex', justifyContent: 'space-around', textAlign: 'center', padding: '18px 12px' }}>
           <EndStat value={`+${state.lastAward?.childId === child.id ? state.lastAward.stars : stars}`} label="STARS EARNED" color="#7a5600" />
           <Divider />
           <EndStat value={`${nailed} of ${qs.length}`} label="NAILED" color="var(--grape-600)" />
           <Divider />
           <EndStat value={`${child.streak + 1}🔥`} label="DAY STREAK" color="var(--coral-600)" />
-        </Card>
+        </PopCard>
 
         {powerUps.length > 0 && (
           <div>
@@ -96,21 +97,22 @@ export function QuickFireGame({ child, onExit }: Props) {
                 const strong = pq.options.find((o) => o.correct)!;
                 const isSaved = state.savedToolkit.includes(strong.text);
                 return (
-                  <Card key={pq.id} style={{ borderLeft: `4px solid ${areaColor(pq.area)}` }}>
+                  <PopCard key={pq.id} style={{ padding: 14, borderLeft: `6px solid ${areaColor(pq.area)}` }}>
                     <div style={{ fontSize: 'var(--text-xs)', fontWeight: 700, color: 'var(--ink-500)' }}>{pq.scene}</div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, margin: '8px 0 6px' }}>
                       <Icon name="zap" size={16} color={areaColor(pq.area)} />
-                      <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, color: 'var(--ink-900)', fontSize: 'var(--text-sm)' }}>{strong.text}</span>
+                      <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, color: INK, fontSize: 'var(--text-sm)' }}>{strong.text}</span>
                     </div>
                     <div style={{ fontSize: 'var(--text-xs)', color: 'var(--ink-700)', marginBottom: 12 }}>{strong.why}</div>
                     <button
                       onClick={() => dispatch({ type: 'saveToolkit', label: strong.text })}
                       disabled={isSaved}
                       style={{
-                        width: '100%', height: 40, borderRadius: 'var(--radius-pill)', cursor: isSaved ? 'default' : 'pointer',
-                        fontWeight: 800, fontSize: 'var(--text-sm)',
-                        border: isSaved ? 'none' : `1.5px solid ${areaColor(pq.area)}`,
-                        background: isSaved ? 'var(--green-100)' : 'var(--surface)',
+                        width: '100%', minHeight: 42, borderRadius: 99, cursor: isSaved ? 'default' : 'pointer',
+                        fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 'var(--text-sm)',
+                        border: `2.5px solid ${INK}`,
+                        background: isSaved ? 'var(--green-100)' : '#fff',
+                        boxShadow: isSaved ? 'none' : '2px 3px 0 var(--grape-300)',
                         color: isSaved ? 'var(--green-700)' : areaColor(pq.area),
                         display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6,
                       }}
@@ -118,14 +120,14 @@ export function QuickFireGame({ child, onExit }: Props) {
                       <Icon name={isSaved ? 'check' : 'bookmark-plus'} size={16} color={isSaved ? 'var(--green-700)' : areaColor(pq.area)} />
                       {isSaved ? 'Saved to your toolkit!' : 'Save to my toolkit'}
                     </button>
-                  </Card>
+                  </PopCard>
                 );
               })}
             </div>
           </div>
         )}
 
-        <Button variant="primary" size="lg" fullWidth onClick={onExit}>Back to games</Button>
+        <PopButton fullWidth onClick={onExit} style={{ minHeight: 52, fontSize: 16 }}>Back to games</PopButton>
       </div>
     );
   }
@@ -134,34 +136,32 @@ export function QuickFireGame({ child, onExit }: Props) {
   return (
     <div style={{ padding: '4px 20px 24px', display: 'flex', flexDirection: 'column', gap: 12 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-        <div style={{ flex: 1, height: 8, borderRadius: 'var(--radius-pill)', background: 'var(--grape-100)', overflow: 'hidden' }}>
-          <div style={{ width: `${progress}%`, height: '100%', background: 'var(--grape-500)', borderRadius: 'var(--radius-pill)', transition: 'width var(--dur-base) var(--ease-out)' }} />
-        </div>
-        <span style={{ fontSize: 'var(--text-xs)', fontWeight: 800, color: 'var(--ink-500)' }}>{i + 1}/{qs.length}</span>
-        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 'var(--text-xs)', fontWeight: 800, color: '#7a5600' }}>
-          <Icon name="star" size={14} color="var(--sun-500)" />{stars}
+        <InkBar pct={progress} height={10} />
+        <span style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-xs)', fontWeight: 800, color: INK }}>{i + 1}/{qs.length}</span>
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, fontFamily: 'var(--font-display)', fontSize: 'var(--text-xs)', fontWeight: 800, color: '#7a5600' }}>
+          <Icon name="star" size={14} color="var(--sun-500)" fill="var(--sun-500)" />{stars}
         </span>
       </div>
 
       {phase === 'play' ? (
         <>
-          <Card tone="plain" style={{ display: 'flex', alignItems: 'center', gap: 11, padding: '11px 13px', background: 'linear-gradient(135deg, #F3EFFC, #EAF4FD)' }}>
+          <PopCard style={{ display: 'flex', alignItems: 'center', gap: 11, padding: '11px 13px' }}>
             <Mascot mood="idle" size={52} />
             <div>
-              <div style={{ fontSize: 'var(--text-2xs)', fontWeight: 800, color: areaColor(q.area), textTransform: 'uppercase', letterSpacing: '0.04em' }}>{areaParentLabel(q.area)}</div>
-              <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 'var(--text-sm)', color: 'var(--ink-900)', lineHeight: 1.25, marginTop: 2 }}>{q.scene}</div>
+              <div style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-2xs)', fontWeight: 800, color: areaColor(q.area), textTransform: 'uppercase', letterSpacing: '0.05em' }}>{areaParentLabel(q.area)}</div>
+              <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 'var(--text-sm)', color: INK, lineHeight: 1.25, marginTop: 2 }}>{q.scene}</div>
             </div>
-          </Card>
+          </PopCard>
           <h1 style={{ fontSize: 'var(--text-xl)', color: 'var(--grape-600)', textAlign: 'center', margin: 0 }}>{q.prompt}</h1>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {q.options.map((o, idx) => (
               <button
                 key={idx}
                 onClick={() => pick(idx)}
                 style={{
-                  textAlign: 'left', padding: '12px 15px', borderRadius: 'var(--radius-lg)', cursor: 'pointer',
-                  border: '2px solid var(--grape-300)', background: 'var(--surface)', boxShadow: 'var(--shadow-sm)',
-                  fontWeight: 700, fontSize: 'var(--text-sm)', color: 'var(--ink-900)', lineHeight: 1.3,
+                  textAlign: 'left', padding: '13px 16px', borderRadius: 16, cursor: 'pointer',
+                  border: `2.5px solid ${INK}`, background: '#fff', boxShadow: '3px 4px 0 var(--grape-300)',
+                  fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 'var(--text-sm)', color: INK, lineHeight: 1.3,
                 }}
               >
                 {o.text}
@@ -180,21 +180,21 @@ export function QuickFireGame({ child, onExit }: Props) {
           </div>
 
           {!chosen!.correct && (
-            <Card tone="tint" style={{ borderLeft: '4px solid var(--green-500)' }}>
-              <div style={{ fontSize: 'var(--text-2xs)', fontWeight: 800, color: 'var(--green-700)', textTransform: 'uppercase' }}>An even stronger move</div>
+            <PopCard tone="green" style={{ padding: '12px 14px' }}>
+              <div style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-2xs)', fontWeight: 800, color: 'var(--green-700)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>An even stronger move</div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 6 }}>
                 <Icon name="zap" size={18} color="var(--green-600)" />
-                <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, color: 'var(--ink-900)' }}>{correctOpt.text}</span>
+                <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, color: INK }}>{correctOpt.text}</span>
               </div>
-            </Card>
+            </PopCard>
           )}
-          <Card style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+          <PopCard style={{ display: 'flex', gap: 12, alignItems: 'flex-start', padding: '13px 15px' }}>
             <Icon name="lightbulb" size={20} color="var(--sun-500)" />
             <div style={{ fontSize: 'var(--text-sm)', color: 'var(--ink-700)', fontWeight: 600 }}>{chosen!.correct ? chosen!.why : correctOpt.why}</div>
-          </Card>
-          <Button variant="primary" size="lg" fullWidth onClick={next} iconRight={<Icon name="arrow-right" size={18} color="#fff" />}>
-            {i + 1 >= qs.length ? 'See results' : 'Next'}
-          </Button>
+          </PopCard>
+          <PopButton fullWidth onClick={next} style={{ minHeight: 52, fontSize: 16, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+            {i + 1 >= qs.length ? 'See results' : 'Next'}<Icon name="arrow-right" size={18} color="#fff" />
+          </PopButton>
         </>
       )}
     </div>
