@@ -132,7 +132,7 @@ export function QuickFireGame({ child, onExit }: Props) {
 
   const progress = ((i + (phase === 'feedback' ? 1 : 0)) / qs.length) * 100;
   return (
-    <div style={{ padding: '4px 20px 28px', display: 'flex', flexDirection: 'column', gap: 16 }}>
+    <div style={{ padding: '4px 20px 24px', display: 'flex', flexDirection: 'column', gap: 12 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
         <div style={{ flex: 1, height: 8, borderRadius: 'var(--radius-pill)', background: 'var(--grape-100)', overflow: 'hidden' }}>
           <div style={{ width: `${progress}%`, height: '100%', background: 'var(--grape-500)', borderRadius: 'var(--radius-pill)', transition: 'width var(--dur-base) var(--ease-out)' }} />
@@ -145,23 +145,23 @@ export function QuickFireGame({ child, onExit }: Props) {
 
       {phase === 'play' ? (
         <>
-          <Card tone="plain" style={{ display: 'flex', alignItems: 'center', gap: 14, background: 'linear-gradient(135deg, #F3EFFC, #EAF4FD)' }}>
-            <Mascot mood="idle" size={72} />
+          <Card tone="plain" style={{ display: 'flex', alignItems: 'center', gap: 11, padding: '11px 13px', background: 'linear-gradient(135deg, #F3EFFC, #EAF4FD)' }}>
+            <Mascot mood="idle" size={52} />
             <div>
               <div style={{ fontSize: 'var(--text-2xs)', fontWeight: 800, color: areaColor(q.area), textTransform: 'uppercase', letterSpacing: '0.04em' }}>{areaParentLabel(q.area)}</div>
-              <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 'var(--text-md)', color: 'var(--ink-900)', lineHeight: 1.2, marginTop: 2 }}>{q.scene}</div>
+              <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 'var(--text-sm)', color: 'var(--ink-900)', lineHeight: 1.25, marginTop: 2 }}>{q.scene}</div>
             </div>
           </Card>
-          <h1 style={{ fontSize: 'var(--text-2xl)', color: 'var(--grape-600)', textAlign: 'center', margin: '2px 0' }}>{q.prompt}</h1>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <h1 style={{ fontSize: 'var(--text-xl)', color: 'var(--grape-600)', textAlign: 'center', margin: 0 }}>{q.prompt}</h1>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
             {q.options.map((o, idx) => (
               <button
                 key={idx}
                 onClick={() => pick(idx)}
                 style={{
-                  textAlign: 'left', padding: '16px 18px', borderRadius: 'var(--radius-lg)', cursor: 'pointer',
+                  textAlign: 'left', padding: '12px 15px', borderRadius: 'var(--radius-lg)', cursor: 'pointer',
                   border: '2px solid var(--grape-300)', background: 'var(--surface)', boxShadow: 'var(--shadow-sm)',
-                  fontWeight: 700, fontSize: 'var(--text-md)', color: 'var(--ink-900)', lineHeight: 1.25,
+                  fontWeight: 700, fontSize: 'var(--text-sm)', color: 'var(--ink-900)', lineHeight: 1.3,
                 }}
               >
                 {o.text}
