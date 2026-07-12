@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../store/AppStore';
 import { useChildEconomy, type ChildEconomy } from '../engine/selectors';
@@ -48,6 +48,7 @@ export function Today() {
 
   return (
     <div style={{ minHeight: '100%', ...popBg, paddingBottom: 28, ...centeredOnTablet }} className="fade-up">
+      <DailyStreakPopup streak={eco.streak.current} childName={activeChild.name} />
       {/* header */}
       <div style={{ padding: '20px 20px 0', display: 'flex', alignItems: 'center', gap: 10 }}>
         <div style={{ flex: 1, minWidth: 0 }}>
@@ -306,6 +307,42 @@ function makeHubChild(name: string, age: number, ageLabel: string, color: string
     missionsDone: 0, scenariosMastered: 0, questProgress: 0, currentGoalId: '', wins: [],
     badges: [],
   };
+}
+
+/**
+ * Daily streak celebration for the parent — mirrors the Kid Zone streak popup
+ * but parent-facing. Shows once per day (per device) on the Today screen when
+ * there's a live learning streak, nudging the family to keep it going.
+ */
+function DailyStreakPopup({ streak, childName }: { streak: number; childName: string }) {
+  const [show, setShow] = useState(false);
+  useEffect(() => {
+    if (streak < 1) return;
+    let today = '';
+    try { today = new Date().toISOString().slice(0, 10); } catch { return; }
+    try {
+      if (localStorage.getItem('sprout_streak_seen') === today) return;
+      localStorage.setItem('sprout_streak_seen', today);
+    } catch { return; }
+    setShow(true);
+  }, [streak]);
+  if (!show) return null;
+  return (
+    <div onClick={() => setShow(false)} style={{ position: 'fixed', inset: 0, zIndex: 300, background: 'rgba(42,37,33,.72)', display: 'grid', placeItems: 'center', padding: 24 }}>
+      <div onClick={(e) => e.stopPropagation()} className="pop-in" style={{ background: '#fff', border: `2.5px solid ${INK}`, borderRadius: 24, boxShadow: '6px 7px 0 rgba(42,37,33,.9)', padding: '26px 20px', width: '100%', maxWidth: 340, textAlign: 'center' }}>
+        <span style={{ display: 'inline-grid', placeItems: 'center', width: 84, height: 84, borderRadius: '50%', background: '#FBE3D8', border: `2.5px solid ${INK}`, fontSize: 40 }}>🔥</span>
+        <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 30, color: INK, marginTop: 12, lineHeight: 1.05 }}>{streak}-day streak!</div>
+        <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 13.5, color: 'var(--ink-500)', marginTop: 5 }}>
+          {streak >= 3
+            ? `${childName} has shown up ${streak} days running — that consistency is what builds real confidence. 🌱`
+            : `Nice start! Come back tomorrow to keep ${childName}’s streak growing.`}
+        </div>
+        <button onClick={() => setShow(false)} style={{ marginTop: 16, width: '100%', border: `2.5px solid ${INK}`, borderRadius: 99, background: 'var(--coral-500)', color: '#fff', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 15, padding: 12, boxShadow: '3px 4px 0 rgba(42,37,33,.85)', cursor: 'pointer' }}>
+          Keep it going! 🔥
+        </button>
+      </div>
+    </div>
+  );
 }
 
 export function FamilyHub({ open, onClose }: { open: boolean; onClose: () => void }) {
