@@ -1,4 +1,5 @@
 import type { CSSProperties, ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import { areaColor, areaParentLabel, type AreaKey } from '../../constants/areas';
 import { Icon } from './Icon';
 
@@ -178,11 +179,13 @@ interface SheetProps {
 
 export function Sheet({ open, onClose, title, children }: SheetProps) {
   if (!open) return null;
-  return (
+  // Portal to <body> so the sheet is never clipped or stacked behind the bottom
+  // nav by a scroll container / animated (transformed) ancestor.
+  return createPortal(
     <div
       onClick={onClose}
       style={{
-        position: 'fixed', inset: 0, zIndex: 120, background: 'var(--scrim)',
+        position: 'fixed', inset: 0, zIndex: 200, background: 'var(--scrim)',
         display: 'flex', alignItems: 'flex-end', animation: 'fadeUp var(--dur-base) var(--ease-out)',
       }}
     >
@@ -190,13 +193,15 @@ export function Sheet({ open, onClose, title, children }: SheetProps) {
         onClick={(e) => e.stopPropagation()}
         style={{
           width: '100%', background: 'var(--surface)', borderRadius: 'var(--radius-xl) var(--radius-xl) 0 0',
-          padding: '10px 20px 24px', boxShadow: 'var(--shadow-pop)', maxHeight: '82%', overflowY: 'auto', overscrollBehavior: 'contain',
+          padding: '10px 20px calc(24px + env(safe-area-inset-bottom, 0px))', boxShadow: 'var(--shadow-pop)',
+          maxHeight: '86dvh', overflowY: 'auto', overscrollBehavior: 'contain', WebkitOverflowScrolling: 'touch',
         }}
       >
         <div style={{ width: 40, height: 4, borderRadius: 999, background: 'var(--border-strong)', margin: '0 auto 14px' }} />
         {title && <h2 style={{ fontSize: 'var(--text-xl)', textAlign: 'center', marginBottom: 16 }}>{title}</h2>}
         {children}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

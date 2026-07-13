@@ -20,8 +20,17 @@ export function nativePlatform(): 'ios' | 'android' | 'web' {
 
 export const isIOSApp = () => nativePlatform() === 'ios';
 
-/** Public site that hosts the legal pages (also the web app origin). */
+/** Public site that hosts the legal pages + serverless API (also the web origin). */
 export const SITE_ORIGIN = 'https://sprout-app-bice.vercel.app';
+
+/**
+ * Resolve an /api/* path. On the web it stays relative (same origin). In the
+ * native app there is no local server (files load from capacitor://localhost),
+ * so point it at the deployed serverless functions.
+ */
+export function apiUrl(path: string): string {
+  return isNativeApp() ? `${SITE_ORIGIN}${path}` : path;
+}
 
 /**
  * Open a URL the right way per platform: in the native app use an in-app

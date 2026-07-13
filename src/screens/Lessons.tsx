@@ -7,6 +7,7 @@ import { centeredOnTablet } from '../useResponsive';
 import { AREAS, type AreaKey } from '../constants/areas';
 import { SITUATION_CATEGORIES, lessonVisual } from '../data/lessons';
 import { usePlan, freeLessonIds } from '../engine/plan';
+import { FamilyHub } from './Today';
 import type { Lesson, LessonShelf } from '../types';
 
 /**
@@ -25,6 +26,7 @@ export function Lessons() {
   const [filter, setFilter] = useState<string>('all');
   const [searchOpen, setSearchOpen] = useState(false);
   const [q, setQ] = useState('');
+  const [hubOpen, setHubOpen] = useState(false);
 
   useEffect(() => { setFilter('all'); }, [shelf]);
 
@@ -57,10 +59,11 @@ export function Lessons() {
         </button>
       </div>
       <div style={{ marginTop: 8 }}>
-        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: '#fff', border: `2px solid ${INK}`, borderRadius: 99, padding: '4px 12px', fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 11.5, color: 'var(--ink-500)' }}>
-          Viewing · {activeChild.name}
-        </span>
+        <button onClick={() => setHubOpen(true)} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: '#fff', border: `2px solid ${INK}`, borderRadius: 99, padding: '5px 12px', fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 11.5, color: 'var(--ink-500)', cursor: 'pointer' }}>
+          Viewing · {activeChild.name} <Icon name="chevron-down" size={14} color="var(--ink-400)" />
+        </button>
       </div>
+      <FamilyHub open={hubOpen} onClose={() => setHubOpen(false)} />
       {searchOpen && (
         <div style={{ marginTop: 10 }}>
           <Input value={q} onChange={(e) => setQ(e.target.value)} iconLeft={<Icon name="search" size={18} />} placeholder="Search all lessons" autoFocus />

@@ -31,6 +31,7 @@ interface Res {
   status: (code: number) => Res;
   json: (body: unknown) => void;
   end: () => void;
+  setHeader: (name: string, value: string) => void;
 }
 
 interface InMsg { role?: string; content?: string }
@@ -83,6 +84,11 @@ const FALLBACK =
   "I'm having a little trouble connecting right now — try me again in a moment. In the meantime, you can browse the Lessons library and search for what's on your mind.";
 
 export default async function handler(req: Req, res: Res) {
+  // The native app runs at capacitor://localhost, so it calls this cross-origin.
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'content-type');
+  if (req.method === 'OPTIONS') { res.status(204).end(); return; }
   if (req.method !== 'POST') { res.status(405).json({ error: 'method_not_allowed' }); return; }
 
   let payload: Record<string, unknown> = {};

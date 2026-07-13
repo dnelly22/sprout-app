@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useApp } from '../store/AppStore';
 import { usePlan } from '../engine/plan';
 import { centeredOnTablet } from '../useResponsive';
+import { apiUrl } from '../native';
 import { lessonCategory, lessonContentById, lessonVisual, situationCategory } from '../data/lessons';
 import { areaParentLabel } from '../constants/areas';
 import { Badge, Button, Card, Icon, IconButton, Input, Sheet } from '../components/ds';
@@ -100,7 +101,7 @@ export function Coach() {
       .map((x) => ({ role: x.from === 'me' ? 'user' : 'assistant', content: x.text }));
 
     try {
-      const r = await fetch('/api/ask', {
+      const r = await fetch(apiUrl('/api/ask'), {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({
