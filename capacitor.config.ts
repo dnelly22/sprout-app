@@ -6,7 +6,10 @@ const config: CapacitorConfig = {
   appName: 'Sprout',
   webDir: 'dist',
   ios: {
-    contentInset: 'always',
+    // We handle safe areas ourselves in CSS (env(safe-area-inset-*) + viewport-fit=cover),
+    // so tell the WebView NOT to auto-adjust content insets — otherwise it double-insets
+    // and the bottom bar gets clipped. 'never' = content is edge-to-edge, CSS does the rest.
+    contentInset: 'never',
   },
 };
 
