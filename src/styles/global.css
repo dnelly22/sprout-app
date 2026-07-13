@@ -53,6 +53,22 @@ body {
 }
 .app-scroll::-webkit-scrollbar { display: none; }
 
+/* Native (Capacitor) app: the WKWebView rubber-band-scrolls the whole document
+   even with overscroll-behavior:none, so the header/nav drift. Pin the shell to
+   the viewport so ONLY .app-scroll moves. Scoped via the `cap-native` class set
+   in main.tsx, so the web funnel keeps scrolling normally. */
+html.cap-native,
+html.cap-native body { height: 100%; overflow: hidden; overscroll-behavior: none; }
+html.cap-native body { position: fixed; inset: 0; width: 100%; }
+html.cap-native .app-frame { height: 100%; min-height: 0; background: #F6F1FF; }
+/* Clear the status bar / Dynamic Island at the top and the home indicator at the
+   sides in landscape — the content now starts at the physical screen edge. */
+html.cap-native .app-scroll {
+  padding-top: env(safe-area-inset-top);
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+}
+
 button { font-family: inherit; }
 
 /* ----- Animations (gate on reduced-motion) ----- */

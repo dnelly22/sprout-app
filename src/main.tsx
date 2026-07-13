@@ -8,6 +8,10 @@ import { MusicProvider } from './audio/MusicProvider';
 import { trackInstallIfStandalone } from './analytics';
 import { initPWA } from './pwa';
 import { initIAP } from './iap';
+import { isNativeApp } from './native';
+
+// Native app: mark the root so the shell can pin itself (no full-page WebView scroll).
+if (isNativeApp()) document.documentElement.classList.add('cap-native');
 
 // Register the service worker + keep the home-screen app auto-updating.
 initPWA();
