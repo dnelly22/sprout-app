@@ -92,14 +92,13 @@ export function Paywall() {
     } else setCodeMsg('bad');
   };
 
-  const perks: [string, string][] = [
-    ['messages-square', 'Parent communication scripts for everyday situations'],
-    ['gamepad-2', 'Kid Journey Games that teach what to say'],
-    ['zap', 'Quick Fire and Say It Out Loud practice'],
-    ['star', 'Daily Quests, Stars, badges, and Sprout growth'],
-    ['trending-up', 'Parent progress view and weekly summaries'],
-    ['sparkles', 'Ask Sprout for communication ideas'],
-    ['users', 'Up to 3 child profiles'],
+  const perks: [string, string, string, string, string][] = [
+    ['gamepad-2', 'Journey Games', 'Story-based practice', 'var(--grape-500)', 'var(--grape-100)'],
+    ['zap', 'Quick Fire', 'Think fast on their feet', 'var(--sky-500)', '#E7F2FB'],
+    ['mic', 'Say It Out Loud', 'Rehearse the real words', 'var(--coral-600)', '#FBE3D8'],
+    ['messages-square', 'Parent scripts', 'What to say, ready to go', 'var(--green-600)', 'var(--green-100)'],
+    ['sparkles', 'Ask Sprout', 'Instant answers for you', 'var(--grape-600)', 'var(--grape-100)'],
+    ['star', 'Stars & badges', 'Growth they can see', 'var(--sun-600)', 'var(--sun-100)'],
   ];
 
   return (
@@ -164,14 +163,15 @@ export function Paywall() {
         </>
       )}
 
-      {/* benefits */}
-      <div style={{ padding: '18px 20px 0', display: 'flex', flexDirection: 'column', gap: 9 }}>
-        {perks.map(([icon, label]) => (
-          <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 11, background: '#fff', border: `2px solid ${INK}`, borderRadius: 14, padding: '10px 13px', boxShadow: '2px 3px 0 var(--grape-300)' }}>
-            <span style={{ width: 32, height: 32, borderRadius: '50%', background: 'var(--grape-100)', border: `2px solid ${INK}`, display: 'grid', placeItems: 'center', flex: 'none' }}>
-              <Icon name={icon} size={15} color={INK} />
+      {/* benefits — 2-column feature-card grid */}
+      <div style={{ padding: '18px 20px 0', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 11 }}>
+        {perks.map(([icon, title, desc, ic, bg], i) => (
+          <div key={title} style={{ display: 'flex', flexDirection: 'column', gap: 7, padding: 13, borderRadius: 16, background: bg, border: `2.5px solid ${INK}`, boxShadow: '3px 4px 0 rgba(42,37,33,.7)', transform: `rotate(${i % 2 ? 0.4 : -0.4}deg)` }}>
+            <span style={{ width: 36, height: 36, borderRadius: '50%', background: '#fff', border: `2px solid ${INK}`, display: 'grid', placeItems: 'center' }}>
+              <Icon name={icon} size={18} color={ic} />
             </span>
-            <span style={{ fontWeight: 800, fontSize: 13, color: INK, lineHeight: 1.3 }}>{label}</span>
+            <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 13.5, color: INK, lineHeight: 1.1 }}>{title}</div>
+            <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--ink-500)', lineHeight: 1.3 }}>{desc}</div>
           </div>
         ))}
       </div>
