@@ -97,6 +97,15 @@ export default async function handler(req: Req, res: Res) {
       event_id: String(ev.id ?? `${type}-${ev.event_timestamp_ms ?? Date.now()}`), // dedupes vs the SDK
       action_source: 'app',
       user_data,
+      // App-linked datasets reject action_source:'app' without app_data.extinfo.
+      // These events originate server-side (no device), so tracking flags are 0
+      // and extinfo carries only the bundle id + a nominal OS version — enough
+      // to pass validation. (extinfo[0]='i2' is the iOS format version.)
+      app_data: {
+        advertiser_tracking_enabled: 0,
+        application_tracking_enabled: 0,
+        extinfo: ['i2', 'com.alenlor.sproutapp', '', '', '17.0', '', '', '', '', '', '', '', '', '', '', ''],
+      },
       custom_data: {
         currency,
         value: price,
