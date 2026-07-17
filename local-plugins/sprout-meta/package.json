@@ -1,0 +1,21 @@
+{
+  "name": "sprout-meta",
+  "version": "1.0.0",
+  "description": "Local Capacitor plugin: Meta (Facebook) SDK app events + SKAdNetwork for Sprout. iOS only.",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "private": true,
+  "capacitor": {
+    "ios": {
+      "src": "ios"
+    }
+  },
+  "peerDependencies": {
+    "@capacitor/core": ">=8.0.0"
+  },
+  "files": [
+    "dist/",
+    "ios/",
+    "Package.swift"
+  ]
+}
